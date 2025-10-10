@@ -33,6 +33,7 @@
 	},
 	"dependencies": {
 		"@iconify/tailwind": "^1.2.0",
+		"@tauri-apps/api": "^2.8.0",
 		"@tauri-apps/plugin-dialog": "~2.4.0",
 		"@tauri-apps/plugin-store": "~2.4.0"
 	}

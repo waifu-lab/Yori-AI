@@ -1,0 +1,15 @@
+[package]
+name = "app_lib"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+tauri = { workspace = true }
+
+serde = { workspace = true }
+parking_lot = { workspace = true }
+rust-i18n = { workspace = true }
+anyhow = { workspace = true }

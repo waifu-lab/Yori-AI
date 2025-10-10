@@ -1,13 +1,15 @@
 <script lang="ts">
-    import { currentProject, type Project } from '$lib/stores/project';
+    import { currentProject, type Project, updateRecentProjectName } from '$lib/stores/project';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
-    import { page } from '$app/stores';
+    import { page } from '$app/state';
     
     let { children } = $props();
     
     let project = $state<Project | null>(null);
-    let showLayout = $derived(!$page.url.pathname.startsWith('/home') && !$page.url.pathname.startsWith('/new'));
+    let showLayout = $derived(page.url.pathname !== '/' && !page.url.pathname.startsWith('/new'));
+    let isEditingName = $state(false);
+    let editedName = $state('');
     
     // 訂閱 store
     $effect(() => {
@@ -17,20 +19,38 @@
         return unsubscribe;
     });
     
-    // 檢查是否需要重定向到 home
-    onMount(() => {
-        // 如果沒有專案且不在 home 或 new 頁面，導向 home
-        if (!project && !$page.url.pathname.startsWith('/home') && !$page.url.pathname.startsWith('/new')) {
-            goto('/home');
+    // 檢查是否需要重定向到根路徑
+    onMount(async () => {
+        // 載入保存的專案
+        await currentProject.loadProject();
+        
+        // 如果沒有專案且不在根路徑或 new 頁面，導向根路徑
+        if (!project && page.url.pathname !== '/' && !page.url.pathname.startsWith('/new')) {
+            goto('/');
         }
     });
     
     // 當專案狀態改變時檢查
     $effect(() => {
-        if (!project && !$page.url.pathname.startsWith('/home') && !$page.url.pathname.startsWith('/new')) {
-            goto('/home');
+        if (!project && page.url.pathname !== '/' && !page.url.pathname.startsWith('/new')) {
+            goto('/');
         }
     });
+    
+    async function saveProjectName() {
+        if (project && editedName.trim()) {
+            const updatedProject = {
+                ...project,
+                name: editedName.trim()
+            };
+            await currentProject.setProject(updatedProject);
+            
+            // 更新最近專案列表中的名稱
+            await updateRecentProjectName(project.path, editedName.trim());
+            
+            isEditingName = false;
+        }
+    }
 </script>
 
 <svelte:head>
@@ -41,10 +61,39 @@
     <div class="app">
         <aside class="sidebar">
             <div class="project-header">
-                {#if project}
-                    <h2 class="project-name">{project.name}</h2>
+                {#if isEditingName}
+                    <div class="edit-name-container">
+                        <input 
+                            type="text" 
+                            bind:value={editedName}
+                            onkeydown={(e) => {
+                                if (e.key === 'Enter') saveProjectName();
+                                else if (e.key === 'Escape') {
+                                    isEditingName = false;
+                                    editedName = '';
+                                }
+                            }}
+                            class="name-input"
+                            autofocus
+                        />
+                        <div class="edit-actions">
+                            <button class="save-btn" onclick={saveProjectName} title="儲存">✓</button>
+                            <button class="cancel-btn" onclick={() => {
+                                isEditingName = false;
+                                editedName = '';
+                            }} title="取消">✕</button>
+                        </div>
+                    </div>
                 {:else}
-                    <h2 class="no-project">未選擇專案</h2>
+                    <div class="name-display">
+                        <h2 class="project-name">{project!.name}</h2>
+                        <button class="edit-btn" onclick={() => {
+                            if (project) {
+                                editedName = project.name;
+                                isEditingName = true;
+                            }
+                        }} title="編輯名稱">✎</button>
+                    </div>
                 {/if}
             </div>
             
@@ -105,6 +154,12 @@
         margin-bottom: 1rem;
     }
 
+    .name-display {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
     .project-name {
         margin: 0;
         font-size: 1.5rem;
@@ -112,12 +167,90 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        flex: 1;
     }
 
-    .no-project {
-        margin: 0;
+    .edit-btn {
+        width: 32px;
+        height: 32px;
+        background: transparent;
+        border: 1px solid #3f3f46;
+        border-radius: 0.375rem;
+        color: #a1a1aa;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .edit-btn:hover {
+        background: #27272a;
+        border-color: #8b5cf6;
+        color: #8b5cf6;
+    }
+
+    .edit-name-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .name-input {
+        width: calc(100% - 2rem);
+        padding: 0.5rem 0.75rem;
+        background: #0f0f0f;
+        border: 1px solid #8b5cf6;
+        border-radius: 0.375rem;
+        color: #e4e4e7;
         font-size: 1.25rem;
-        color: #71717a;
+        font-weight: 600;
+        font-family: inherit;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .name-input:focus {
+        outline: none;
+        border-color: #8b5cf6;
+    }
+
+    .edit-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .save-btn,
+    .cancel-btn {
+        flex: 1;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .save-btn {
+        background: #22c55e;
+        color: white;
+    }
+
+    .save-btn:hover {
+        background: #16a34a;
+    }
+
+    .cancel-btn {
+        background: #27272a;
+        border: 1px solid #3f3f46;
+        color: #a1a1aa;
+    }
+
+    .cancel-btn:hover {
+        background: #3f3f46;
+        color: #e4e4e7;
     }
 
     .section-title {

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { currentProject } from '$lib/stores/project';
+    import { currentProject, addRecentProject } from '$lib/stores/project';
     import { open } from '@tauri-apps/plugin-dialog';
     
     let projectName = $state('');
@@ -22,7 +22,7 @@
         return Object.keys(errors).length === 0;
     }
     
-    function createProject() {
+    async function createProject() {
         if (!validateForm()) {
             return;
         }
@@ -34,31 +34,20 @@
         };
         
         // 設定當前專案
-        currentProject.setProject(newProject);
+        await currentProject.setProject(newProject);
         
         // 儲存到最近專案列表
-        const stored = localStorage.getItem('recentProjects');
-        const recentProjects = stored ? JSON.parse(stored) : [];
-        
-        // 避免重複，先移除相同路徑的專案
-        const filtered = recentProjects.filter((p: any) => p.path !== newProject.path);
-        
-        // 加入新專案到最前面
-        filtered.unshift({
+        await addRecentProject({
             name: newProject.name,
             path: newProject.path
         });
         
-        // 最多保留 10 個最近專案
-        const limited = filtered.slice(0, 10);
-        localStorage.setItem('recentProjects', JSON.stringify(limited));
-        
-        // 導向首頁
-        goto('/');
+        // 導向專案頁
+        goto('/project');
     }
     
     function cancel() {
-        goto('/home');
+        goto('/');
     }
     
     async function browsePath() {

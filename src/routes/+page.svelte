@@ -1,213 +1,246 @@
 <script lang="ts">
-    let status = $state('ready');
-    let isRunning = $state(false);
-
-    function toggleLauncher() {
-        isRunning = !isRunning;
-        status = isRunning ? 'running' : 'ready';
+    import { goto } from '$app/navigation';
+    import { currentProject, getRecentProjects, removeRecentProject } from '$lib/stores/project';
+    import { onMount } from 'svelte';
+    
+    // 從 Tauri store 讀取最近的專案列表
+    let recentProjects = $state<Array<{ name: string; path: string }>>([]);
+    
+    onMount(async () => {
+        // 載入最近專案列表
+        recentProjects = await getRecentProjects();
+    });
+    
+    async function loadProject(name: string, path: string) {
+        await currentProject.setProject({
+            name,
+            path,
+            plugins: [] // 可以從 Tauri store 載入插件列表
+        });
+        goto('/project');
+    }
+    
+    function createNewProject() {
+        goto('/new');
+    }
+    
+    function openFileDialog() {
+        // 使用 HTML5 file input 或其他方式
+        alert('載入專案功能：可以使用資料夾選擇器或直接輸入專案路徑');
+    }
+    
+    async function deleteProject(event: Event, path: string) {
+        event.stopPropagation(); // 防止觸發載入專案
+        
+        if (confirm('確定要從列表中移除此專案嗎？')) {
+            recentProjects = await removeRecentProject(path);
+        }
     }
 </script>
 
-<div class="container">
-    <div class="hero-section">
-        <div class="status-card">
-            <div class="status-indicator" class:active={isRunning}></div>
-            <div class="status-info">
-                <h2>系統狀態</h2>
-                <p class="status-text">{isRunning ? '運行中' : '就緒'}</p>
-            </div>
-        </div>
+<div class="home-container">
+    <div class="welcome-section">
+        <h1>歡迎使用 AI VTuber Launcher</h1>
+        <p>選擇一個專案開始，或創建新專案</p>
+    </div>
 
-        <button class="launch-button" onclick={toggleLauncher}>
-            <span class="button-icon">{isRunning ? '⏸️' : '▶️'}</span>
-            <span>{isRunning ? '停止' : '啟動'} VTuber</span>
+    <div class="actions">
+        <button class="action-card create" onclick={createNewProject}>
+            <div class="icon">➕</div>
+            <h3>創建新專案</h3>
+            <p>從頭開始設定你的 AI VTuber</p>
+        </button>
+
+        <button class="action-card load" onclick={openFileDialog}>
+            <div class="icon">📁</div>
+            <h3>載入專案</h3>
+            <p>從本地載入現有專案</p>
         </button>
     </div>
 
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">🤖</div>
-            <h3>AI 模型</h3>
-            <p>使用先進的 AI 模型進行互動</p>
+    {#if recentProjects.length > 0}
+        <div class="recent-section">
+            <h2>最近的專案</h2>
+            <div class="recent-list">
+                {#each recentProjects as project}
+                    <div class="recent-item-wrapper">
+                        <button 
+                            class="recent-item"
+                            onclick={() => loadProject(project.name, project.path)}
+                        >
+                            <div class="recent-icon">📦</div>
+                            <div class="recent-info">
+                                <div class="recent-name">{project.name}</div>
+                                <div class="recent-path">{project.path}</div>
+                            </div>
+                        </button>
+                        <button 
+                            class="delete-btn"
+                            onclick={(e) => deleteProject(e, project.path)}
+                            title="從列表移除"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                {/each}
+            </div>
         </div>
-
-        <div class="feature-card">
-            <div class="feature-icon">🎤</div>
-            <h3>語音合成</h3>
-            <p>高品質的語音生成技術</p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon">🎨</div>
-            <h3>自定義設定</h3>
-            <p>完全可自定義的角色設定</p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon">⚡</div>
-            <h3>高效能</h3>
-            <p>優化的性能表現</p>
-        </div>
-    </div>
-
-    <div class="stats-section">
-        <div class="stat-item">
-            <div class="stat-value">0</div>
-            <div class="stat-label">運行時間 (分鐘)</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-value">0</div>
-            <div class="stat-label">互動次數</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-value">100%</div>
-            <div class="stat-label">系統健康度</div>
-        </div>
-    </div>
+    {/if}
 </div>
 
 <style>
-    .container {
-        max-width: 1200px;
+    .home-container {
+        max-width: 900px;
         margin: 0 auto;
-    }
-
-    .hero-section {
-        background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
-        border-radius: 1rem;
-        padding: 3rem;
-        margin-bottom: 2rem;
-        border: 1px solid #3f3f46;
-    }
-
-    .status-card {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .status-indicator {
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: #71717a;
-        transition: all 0.3s;
-    }
-
-    .status-indicator.active {
-        background: #22c55e;
-        box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-    }
-
-    .status-info h2 {
-        margin: 0;
-        font-size: 1.25rem;
-        color: #e4e4e7;
-    }
-
-    .status-text {
-        margin: 0.25rem 0 0;
-        color: #a1a1aa;
-        font-size: 0.95rem;
-    }
-
-    .launch-button {
-        width: 100%;
-        padding: 1.25rem 2rem;
-        font-size: 1.25rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-        color: white;
-        border: none;
-        border-radius: 0.75rem;
-        cursor: pointer;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-    }
-
-    .launch-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
-    }
-
-    .button-icon {
-        font-size: 1.5rem;
-    }
-
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .feature-card {
-        background: #18181b;
-        border: 1px solid #27272a;
-        border-radius: 0.75rem;
-        padding: 2rem;
-        transition: all 0.3s;
-    }
-
-    .feature-card:hover {
-        border-color: #8b5cf6;
-        transform: translateY(-4px);
-        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.1);
-    }
-
-    .feature-icon {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .feature-card h3 {
-        margin: 0 0 0.5rem;
-        color: #e4e4e7;
-        font-size: 1.25rem;
-    }
-
-    .feature-card p {
-        margin: 0;
-        color: #a1a1aa;
-        font-size: 0.95rem;
-    }
-
-    .stats-section {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        background: #18181b;
-        border: 1px solid #27272a;
-        border-radius: 0.75rem;
         padding: 2rem;
     }
 
-    .stat-item {
+    .welcome-section {
         text-align: center;
+        margin-bottom: 3rem;
     }
 
-    .stat-value {
+    .welcome-section h1 {
         font-size: 2.5rem;
-        font-weight: 700;
+        margin: 0 0 1rem;
         background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        margin-bottom: 0.5rem;
     }
 
-    .stat-label {
+    .welcome-section p {
+        font-size: 1.1rem;
         color: #a1a1aa;
-        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .action-card {
+        background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+        border: 2px solid #3f3f46;
+        border-radius: 1rem;
+        padding: 2.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
+    }
+
+    .action-card:hover {
+        border-color: #8b5cf6;
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+    }
+
+    .action-card.create {
+        border-color: #8b5cf6;
+    }
+
+    .action-card .icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .action-card h3 {
+        margin: 0 0 0.5rem;
+        font-size: 1.5rem;
+        color: #e4e4e7;
+    }
+
+    .action-card p {
+        margin: 0;
+        color: #a1a1aa;
+        font-size: 0.95rem;
+    }
+
+    .recent-section {
+        margin-top: 3rem;
+    }
+
+    .recent-section h2 {
+        font-size: 1.5rem;
+        margin: 0 0 1rem;
+        color: #e4e4e7;
+    }
+
+    .recent-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .recent-item-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .recent-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex: 1;
+        text-align: left;
+    }
+
+    .recent-item:hover {
+        border-color: #8b5cf6;
+        background: #1f1f23;
+    }
+
+    .delete-btn {
+        width: 40px;
+        height: 40px;
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 0.5rem;
+        color: #71717a;
+        font-size: 1.25rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .delete-btn:hover {
+        background: #ef4444;
+        border-color: #ef4444;
+        color: white;
+    }
+
+    .recent-icon {
+        font-size: 2rem;
+    }
+
+    .recent-info {
+        flex: 1;
+    }
+
+    .recent-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #e4e4e7;
+        margin-bottom: 0.25rem;
+    }
+
+    .recent-path {
+        font-size: 0.85rem;
+        color: #71717a;
     }
 </style>
