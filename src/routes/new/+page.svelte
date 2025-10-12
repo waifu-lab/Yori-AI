@@ -1,12 +1,37 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { currentProject, addRecentProject } from '$lib/stores/project';
+    import { projectStore } from '$lib/stores/project';
+    import { createProject, ProjectControlMode } from '$lib/commands';
     import { open } from '@tauri-apps/plugin-dialog';
     
     let projectName = $state('');
     let projectPath = $state('');
     let description = $state('');
+    let selectedMode = $state<ProjectControlMode>(ProjectControlMode.Streaming);
     let errors = $state<Record<string, string>>({});
+    let isCreating = $state(false);
+    
+    // 模式選項
+    const modeOptions = [
+        {
+            value: ProjectControlMode.Streaming,
+            label: '直播模式',
+            icon: '📹',
+            description: '用於 OBS、直播平台等串流應用'
+        },
+        {
+            value: ProjectControlMode.Desktop,
+            label: '桌面模式',
+            icon: '🖥️',
+            description: '桌面寵物、獨立應用程式'
+        },
+        {
+            value: ProjectControlMode.Discord,
+            label: 'Discord 模式',
+            icon: '💬',
+            description: '用於 Discord 語音頻道互動'
+        }
+    ];
     
     function validateForm() {
         errors = {};
@@ -16,34 +41,36 @@
         }
         
         if (!projectPath.trim()) {
-            errors.path = '請輸入專案路徑';
+            errors.path = '請選擇專案路徑';
         }
         
         return Object.keys(errors).length === 0;
     }
     
-    async function createProject() {
-        if (!validateForm()) {
+    async function handleCreateProject() {
+        if (!validateForm() || isCreating) {
             return;
         }
         
-        const newProject = {
-            name: projectName.trim(),
-            path: projectPath.trim(),
-            plugins: []
-        };
+        isCreating = true;
         
-        // 設定當前專案
-        await currentProject.setProject(newProject);
-        
-        // 儲存到最近專案列表
-        await addRecentProject({
-            name: newProject.name,
-            path: newProject.path
-        });
-        
-        // 導向專案頁
-        goto('/project');
+        try {
+            // 調用後端創建專案
+            await createProject(
+                projectName.trim(),
+                projectPath.trim(),
+                description.trim(),
+                selectedMode
+            );
+            
+            // 導向首頁或專案頁
+            goto('/');
+        } catch (error) {
+            console.error('創建專案失敗:', error);
+            alert('創建專案失敗: ' + error);
+        } finally {
+            isCreating = false;
+        }
     }
     
     function cancel() {
@@ -79,7 +106,7 @@
         <p>設定你的 AI VTuber 專案</p>
     </div>
 
-    <form class="form" onsubmit={(e) => { e.preventDefault(); createProject(); }}>
+    <form class="form" onsubmit={(e) => { e.preventDefault(); handleCreateProject(); }}>
         <div class="form-group">
             <label for="name">專案名稱 *</label>
             <input 
@@ -103,6 +130,7 @@
                     bind:value={projectPath}
                     placeholder="C:/Projects/my-vtuber"
                     class:error={errors.path}
+                    readonly
                 />
                 <button type="button" class="browse-btn" onclick={browsePath}>
                     瀏覽...
@@ -111,6 +139,24 @@
             {#if errors.path}
                 <span class="error-message">{errors.path}</span>
             {/if}
+        </div>
+
+        <div class="form-group">
+            <label>控制模式 *</label>
+            <div class="mode-selector">
+                {#each modeOptions as mode}
+                    <button
+                        type="button"
+                        class="mode-option"
+                        class:selected={selectedMode === mode.value}
+                        onclick={() => selectedMode = mode.value}
+                    >
+                        <div class="mode-icon">{mode.icon}</div>
+                        <div class="mode-label">{mode.label}</div>
+                        <div class="mode-desc">{mode.description}</div>
+                    </button>
+                {/each}
+            </div>
         </div>
 
         <div class="form-group">
@@ -132,11 +178,11 @@
         </div>
 
         <div class="form-actions">
-            <button type="button" class="btn-cancel" onclick={cancel}>
+            <button type="button" class="btn-cancel" onclick={cancel} disabled={isCreating}>
                 取消
             </button>
-            <button type="submit" class="btn-create">
-                創建專案
+            <button type="submit" class="btn-create" disabled={isCreating}>
+                {isCreating ? '創建中...' : '創建專案'}
             </button>
         </div>
     </form>
@@ -253,6 +299,50 @@
     textarea {
         resize: vertical;
         min-height: 100px;
+    }
+
+    .mode-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .mode-option {
+        background: #18181b;
+        border: 2px solid #3f3f46;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+    }
+
+    .mode-option:hover {
+        border-color: #8b5cf6;
+        background: #1f1f23;
+    }
+
+    .mode-option.selected {
+        border-color: #8b5cf6;
+        background: rgba(139, 92, 246, 0.1);
+    }
+
+    .mode-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .mode-label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #e4e4e7;
+        margin-bottom: 0.5rem;
+    }
+
+    .mode-desc {
+        font-size: 0.85rem;
+        color: #71717a;
+        line-height: 1.4;
     }
 
     .info-card {

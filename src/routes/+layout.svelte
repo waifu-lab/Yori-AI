@@ -1,55 +1,57 @@
 <script lang="ts">
-    import { currentProject, type Project, updateRecentProjectName } from '$lib/stores/project';
+    import { projectStore } from '$lib/stores/project';
+    import { updateProjectName, type ProjectData } from '$lib/commands';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
     import { page } from '$app/state';
     
     let { children } = $props();
     
-    let project = $state<Project | null>(null);
+    let project = $state<ProjectData | null>(null);
     let showLayout = $derived(page.url.pathname !== '/' && !page.url.pathname.startsWith('/new'));
     let isEditingName = $state(false);
     let editedName = $state('');
     
     // 訂閱 store
-    $effect(() => {
-        const unsubscribe = currentProject.subscribe(value => {
+    onMount(() => {
+        const unsubscribe = projectStore.subscribe(value => {
             project = value;
         });
         return unsubscribe;
     });
     
-    // 檢查是否需要重定向到根路徑
-    onMount(async () => {
-        // 載入保存的專案
-        await currentProject.loadProject();
-        
-        // 如果沒有專案且不在根路徑或 new 頁面，導向根路徑
-        if (!project && page.url.pathname !== '/' && !page.url.pathname.startsWith('/new')) {
-            goto('/');
-        }
-    });
-    
-    // 當專案狀態改變時檢查
-    $effect(() => {
-        if (!project && page.url.pathname !== '/' && !page.url.pathname.startsWith('/new')) {
-            goto('/');
-        }
-    });
-    
+    /**
+     * 儲存專案名稱
+     */
     async function saveProjectName() {
-        if (project && editedName.trim()) {
-            const updatedProject = {
-                ...project,
-                name: editedName.trim()
-            };
-            await currentProject.setProject(updatedProject);
-            
-            // 更新最近專案列表中的名稱
-            await updateRecentProjectName(project.path, editedName.trim());
-            
+        if (project && editedName.trim() && editedName.trim() !== project.name) {
+            try {
+                await updateProjectName(project.name, editedName.trim());
+                // 更新 store
+                projectStore.setCurrent({
+                    ...project,
+                    name: editedName.trim()
+                });
+                isEditingName = false;
+            } catch (error) {
+                console.error('更新專案名稱失敗:', error);
+                alert('更新專案名稱失敗');
+            }
+        } else {
             isEditingName = false;
         }
+    }
+    
+    /**
+     * 獲取模式文字
+     */
+    function getModeText(mode: string): string {
+        const modeMap: Record<string, string> = {
+            'Streaming': '直播模式',
+            'Desktop': '桌面模式',
+            'Discord': 'Discord 模式'
+        };
+        return modeMap[mode] || mode;
     }
 </script>
 
@@ -98,14 +100,18 @@
             </div>
             
             {#if project}
+                <div class="project-mode-badge">
+                    {getModeText(project.mode)}
+                </div>
+                
                 <nav class="plugin-list">
                     <div class="section-title">已安裝插件</div>
                     {#if project.plugins.length > 0}
                         {#each project.plugins as plugin}
-                            <a href="/plugins/{plugin}" class="plugin-item">
+                            <div class="plugin-item">
                                 <span class="icon">🧩</span>
                                 <span>{plugin}</span>
-                            </a>
+                            </div>
                         {/each}
                     {:else}
                         <div class="empty-state">尚未安裝插件</div>
@@ -251,6 +257,18 @@
     .cancel-btn:hover {
         background: #3f3f46;
         color: #e4e4e7;
+    }
+
+    .project-mode-badge {
+        margin: 0 1.5rem 1rem;
+        padding: 0.5rem 0.75rem;
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 0.5rem;
+        text-align: center;
+        font-size: 0.875rem;
+        color: #8b5cf6;
+        font-weight: 500;
     }
 
     .section-title {

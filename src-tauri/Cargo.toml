@@ -12,16 +12,15 @@ rust-version = "1.77.2"
 tauri-build = { version = "2.4.1", features = [] }
 
 [dependencies]
-app_lib = { path = "../app_lib" }
+plugin_lib = { path = "../plugin_lib" }
 
 tauri = { workspace = true }
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 serde = { workspace = true }
 parking_lot = { workspace = true }
-crossbeam-channel = { workspace = true }
-once_cell = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 rust-i18n = { workspace = true }
-bincode = { workspace = true }
+bincode = "1.3.3"
+uuid = { version = "1.18.1", features = ["js", "serde", "v4"] }

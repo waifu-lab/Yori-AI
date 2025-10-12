@@ -1,5 +1,16 @@
+use crate::{models::{ProjectControlMode, ProjectData}, state::AppState};
+
 #[tauri::command]
-fn create_project(name: String, path: String, description: String) -> Result<(), String> {
-    // Implementation for creating a new project
-    Ok(())
+pub fn create_project(
+    state: tauri::State<AppState>,
+    name: String,
+    path: String,
+    description: String,
+    mode: ProjectControlMode,
+) -> Result<uuid::Uuid, String> {
+    let mut manager = state.project_manager.write();
+    let project = ProjectData::new(&name, &path, &description, mode);
+    let id = project.id();
+    manager.add_project(project);
+    Ok(id)
 }

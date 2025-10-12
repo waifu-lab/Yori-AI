@@ -1,101 +1,101 @@
-use std::time;
+use std::{collections::HashMap, time};
 use serde::{Deserialize, Serialize};
-use parking_lot::RwLock;
 
-use crate::utils::serde_transform;
-use app_lib::types::{Project, ProjectControlMode};
-
-#[derive(Serialize, Deserialize)]
-pub struct ProjectImpl {
-    #[serde(
-        serialize_with = "serde_transform::remove_lock",
-        deserialize_with = "serde_transform::add_lock"
-    )]
-    name: RwLock<String>,
+#[derive(Deserialize, Serialize)]
+pub struct ProjectData {
+    id: uuid::Uuid,
+    name: String,
     path: String,
-    #[serde(
-        serialize_with = "serde_transform::remove_lock",
-        deserialize_with = "serde_transform::add_lock"
-    )]
-    description: RwLock<String>,
-    #[serde(
-        serialize_with = "serde_transform::remove_lock",
-        deserialize_with = "serde_transform::add_lock"
-    )]
-    mode: RwLock<ProjectControlMode>,
-    #[serde(
-        serialize_with = "serde_transform::remove_lock",
-        deserialize_with = "serde_transform::add_lock"
-    )]
-    plugins: RwLock<Vec<String>>,
+    description: String,
+    mode: ProjectControlMode,
+    plugins: Vec<String>,
     created_at: time::SystemTime,
-    #[serde(
-        serialize_with = "serde_transform::remove_lock",
-        deserialize_with = "serde_transform::add_lock"
-    )]
-    last_opened: RwLock<time::SystemTime>,
+    last_opened: time::SystemTime,
+    metadata: ProjectMetadata,
 }
 
-impl Project for ProjectImpl {
-    fn name(&self) -> String {
-        self.name.read().clone()
+#[derive(Deserialize, Serialize, Clone)]
+pub enum ProjectControlMode {
+    Streaming,
+    Desktop,
+    Discord,
+    // Add more modes as needed
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ProjectMetadata {
+    plugin_data: HashMap<String, String>
+    // Add metadata fields as needed
+}
+
+impl ProjectData {
+    pub fn id(&self) -> uuid::Uuid {
+        self.id
+    }
+    
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
 
-    fn path(&self) -> String {
+    pub fn path(&self) -> String {
         self.path.clone()
     }
 
-    fn description(&self) -> String {
-        self.description.read().clone()
+    pub fn description(&self) -> String {
+        self.description.clone()
     }
 
-    fn mode(&self) -> ProjectControlMode {
-        *self.mode.read()
+    pub fn mode(&self) -> ProjectControlMode {
+        self.mode.clone()
     }
 
-    fn plugins(&self) -> Vec<String> {
-        self.plugins.read().clone()
+    pub fn plugins(&self) -> Vec<String> {
+        self.plugins.clone()
     }
 
-    fn created_at(&self) -> time::SystemTime {
+    pub fn created_at(&self) -> time::SystemTime {
         self.created_at.clone()
     }
 
-    fn last_opened(&self) -> time::SystemTime {
-        self.last_opened.read().clone()
+    pub fn last_opened(&self) -> time::SystemTime {
+        self.last_opened.clone()
     }
 
-    fn update_name(&self, name: &str) {
-        *self.name.write() = name.to_string();
+    pub fn update_name(&mut self, name: &str) {
+        self.name = name.to_string();
     }
 
-    fn update_description(&self, description: &str) {
-        *self.description.write() = description.to_string();
+    pub fn update_description(&mut self, description: &str) {
+        self.description = description.to_string();
     }
 
-    fn update_last_opened(&self, time: time::SystemTime) {
-        self.last_opened.write().clone_from(&time);
+    pub fn update_last_opened(&mut self, time: time::SystemTime) {
+        self.last_opened = time;
     }
 
-    fn add_plugin(&self, plugin_id: &str) {
-        self.plugins.write().push(plugin_id.to_string());
+    pub fn add_plugin(&mut self, plugin_id: &str) {
+        self.plugins.push(plugin_id.to_string());
     }
 
-    fn remove_plugin(&self, plugin_id: &str) {
-        self.plugins.write().retain(|p| p != plugin_id);
+    pub fn remove_plugin(&mut self, plugin_id: &str) {
+        self.plugins.retain(|p| p != plugin_id);
     }
 }
 
-impl ProjectImpl {
+impl ProjectData {
     pub fn new(name: &str, path: &str, description: &str, mode: ProjectControlMode) -> Self {
         Self {
-            name: RwLock::new(name.to_string()),
+            id: uuid::Uuid::new_v4(),
+            name: name.to_string(),
             path: path.to_string(),
-            description: RwLock::new(description.to_string()),
-            mode: RwLock::new(mode),
-            plugins: RwLock::new(Vec::new()),
+            description: description.to_string(),
+            mode: mode,
+            plugins: Vec::new(),
             created_at: time::SystemTime::now(),
-            last_opened: RwLock::new(time::SystemTime::now()),
+            last_opened: time::SystemTime::now(),
+            metadata: ProjectMetadata {
+                plugin_data: HashMap::new(),
+            },
         }
     }
 }

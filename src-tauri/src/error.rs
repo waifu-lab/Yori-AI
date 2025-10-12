@@ -1,22 +1,23 @@
-use bincode::ErrorKind;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum PathError {
-    #[error("Invalid path provided")]
-    InvalidPath,
-    #[error("File or directory not found")]
-    NotFound,
-    #[error("Permission denied")]
-    PermissionDenied,
-    #[error(transparent)]
-    IoError(std::io::Error),
+pub enum FrontendError {
+
 }
 
 #[derive(Error, Debug)]
-pub enum SerializeError {
+pub enum BackendError {
+    // Path errors
+    #[error("Invalid path")]
+    InvalidPath,
+
+    // IO errors
     #[error(transparent)]
-    SerializationFailed(Box<ErrorKind>),
-    #[error(transparent)]
-    DeserializationFailed(Box<ErrorKind>),
+    IoError(#[from] std::io::Error),
+
+    // Serialization errors
+    #[error("Serialization failed: {0}")]
+    SerializationFailed(bincode::Error),
+    #[error("Deserialization failed: {0}")]
+    DeserializationFailed(bincode::Error),
 }

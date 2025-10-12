@@ -1,40 +1,114 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { currentProject, getRecentProjects, removeRecentProject } from '$lib/stores/project';
+    import { projectStore } from '$lib/stores/project';
+    import { getRecentProjects, removeProject } from '$lib/commands';
+    import type { ProjectData } from '$lib/commands';
     import { onMount } from 'svelte';
+    import { open } from '@tauri-apps/plugin-dialog';
     
-    // 從 Tauri store 讀取最近的專案列表
-    let recentProjects = $state<Array<{ name: string; path: string }>>([]);
+    // 最近的專案列表
+    let recentProjects = $state<ProjectData[]>([]);
+    let loading = $state(true);
     
     onMount(async () => {
-        // 載入最近專案列表
-        recentProjects = await getRecentProjects();
+        try {
+            recentProjects = await getRecentProjects();
+        } catch (error) {
+            console.error('載入最近專案失敗:', error);
+        } finally {
+            loading = false;
+        }
     });
     
-    async function loadProject(name: string, path: string) {
-        await currentProject.setProject({
-            name,
-            path,
-            plugins: [] // 可以從 Tauri store 載入插件列表
-        });
+    /**
+     * 載入選中的專案
+     */
+    async function loadProject(project: ProjectData) {
+        projectStore.setCurrent(project);
         goto('/project');
     }
     
+    /**
+     * 創建新專案
+     */
     function createNewProject() {
         goto('/new');
     }
     
-    function openFileDialog() {
-        // 使用 HTML5 file input 或其他方式
-        alert('載入專案功能：可以使用資料夾選擇器或直接輸入專案路徑');
+    /**
+     * 從文件系統載入專案
+     */
+    async function openProjectFolder() {
+        try {
+            const selected = await open({
+                directory: true,
+                multiple: false,
+                title: '選擇專案資料夾'
+            });
+            
+            if (selected) {
+                // TODO: 從資料夾載入專案配置
+                alert(`選擇的資料夾: ${selected}`);
+            }
+        } catch (error) {
+            console.error('選擇資料夾失敗:', error);
+        }
     }
     
-    async function deleteProject(event: Event, path: string) {
-        event.stopPropagation(); // 防止觸發載入專案
+    /**
+     * 從列表中刪除專案
+     */
+    async function deleteProject(event: MouseEvent, project: ProjectData) {
+        event.stopPropagation();
         
-        if (confirm('確定要從列表中移除此專案嗎？')) {
-            recentProjects = await removeRecentProject(path);
+        if (confirm(`確定要刪除專案「${project.name}」嗎？`)) {
+            try {
+                const success = await removeProject(project.name);
+                if (success) {
+                    // 重新載入專案列表
+                    recentProjects = await getRecentProjects();
+                }
+            } catch (error) {
+                console.error('刪除專案失敗:', error);
+                alert('刪除專案失敗');
+            }
         }
+    }
+    
+    /**
+     * 格式化日期顯示
+     */
+    function formatDate(timestamp: number): string {
+        const date = new Date(timestamp);
+        return date.toLocaleDateString('zh-TW', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    }
+    
+    /**
+     * 獲取模式的顯示文字
+     */
+    function getModeText(mode: string): string {
+        const modeMap: Record<string, string> = {
+            'Streaming': '直播模式',
+            'Desktop': '桌面模式',
+            'Discord': 'Discord 模式'
+        };
+        return modeMap[mode] || mode;
+    }
+    
+    /**
+     * 獲取模式的圖標
+     */
+    function getModeIcon(mode: string): string {
+        const iconMap: Record<string, string> = {
+            'Streaming': '📹',
+            'Desktop': '🖥️',
+            'Discord': '💬'
+        };
+        return iconMap[mode] || '📦';
     }
 </script>
 
@@ -51,14 +125,18 @@
             <p>從頭開始設定你的 AI VTuber</p>
         </button>
 
-        <button class="action-card load" onclick={openFileDialog}>
+        <button class="action-card load" onclick={openProjectFolder}>
             <div class="icon">📁</div>
             <h3>載入專案</h3>
             <p>從本地載入現有專案</p>
         </button>
     </div>
 
-    {#if recentProjects.length > 0}
+    {#if loading}
+        <div class="loading">
+            <p>載入中...</p>
+        </div>
+    {:else if recentProjects.length > 0}
         <div class="recent-section">
             <h2>最近的專案</h2>
             <div class="recent-list">
@@ -66,24 +144,38 @@
                     <div class="recent-item-wrapper">
                         <button 
                             class="recent-item"
-                            onclick={() => loadProject(project.name, project.path)}
+                            onclick={() => loadProject(project)}
                         >
-                            <div class="recent-icon">📦</div>
+                            <div class="recent-icon">{getModeIcon(project.mode)}</div>
                             <div class="recent-info">
-                                <div class="recent-name">{project.name}</div>
+                                <div class="recent-header">
+                                    <div class="recent-name">{project.name}</div>
+                                    <div class="recent-mode">{getModeText(project.mode)}</div>
+                                </div>
                                 <div class="recent-path">{project.path}</div>
+                                <div class="recent-meta">
+                                    <span>上次開啟: {formatDate(project.last_opened)}</span>
+                                    {#if project.plugins.length > 0}
+                                        <span>• {project.plugins.length} 個插件</span>
+                                    {/if}
+                                </div>
                             </div>
                         </button>
                         <button 
                             class="delete-btn"
-                            onclick={(e) => deleteProject(e, project.path)}
-                            title="從列表移除"
+                            onclick={(e) => deleteProject(e, project)}
+                            title="刪除專案"
                         >
                             ✕
                         </button>
                     </div>
                 {/each}
             </div>
+        </div>
+    {:else}
+        <div class="empty-state">
+            <p>還沒有任何專案</p>
+            <p class="hint">點擊上方按鈕開始創建或載入專案</p>
         </div>
     {/if}
 </div>
@@ -225,22 +317,63 @@
     }
 
     .recent-icon {
-        font-size: 2rem;
+        font-size: 2.5rem;
+        flex-shrink: 0;
     }
 
     .recent-info {
         flex: 1;
+        min-width: 0;
+    }
+
+    .recent-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
     }
 
     .recent-name {
         font-size: 1.1rem;
         font-weight: 600;
         color: #e4e4e7;
-        margin-bottom: 0.25rem;
+    }
+
+    .recent-mode {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        background: #8b5cf6;
+        color: white;
+        border-radius: 0.375rem;
+        font-weight: 500;
     }
 
     .recent-path {
-        font-size: 0.85rem;
+        font-size: 0.875rem;
         color: #71717a;
+        margin-bottom: 0.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .recent-meta {
+        font-size: 0.75rem;
+        color: #52525b;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .loading,
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #71717a;
+    }
+
+    .empty-state .hint {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #52525b;
     }
 </style>

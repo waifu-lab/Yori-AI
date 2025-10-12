@@ -1,29 +1,34 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod models;
-mod commands;
-mod utils;
-mod error;
+use tauri::Manager;
 
-use parking_lot::RwLock;
-use app_lib::types;
+#[macro_use]
+extern crate rust_i18n;
+
+mod commands;
+mod models;
+mod managers;
+mod utils;
+
+mod error;
+mod state;
+
+i18n!("locales", fallback = "zh-TW");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-fn run() {
+fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
-        .manage(RwLock::new(types::AppState::default()))
+        .manage(state::AppState::new())
         .invoke_handler(tauri::generate_handler![
-            
+            commands::initialize,
+            commands::create_project,
         ])
         .setup(|app| {
+            app.state::<state::AppState>().project_manager.write().set_handle(&app.handle());
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-fn main() {
-    run();
 }

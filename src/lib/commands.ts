@@ -1,125 +1,111 @@
 /**
  * Tauri Commands Interface
  * 
- * 這個檔案定義了前端需要的所有 Tauri commands
- * 後端需要實作這些 commands
+ * 前端與後端的 Tauri 命令接口
  */
 
-import type { Project } from './stores/project';
 import { invoke } from '@tauri-apps/api/core';
 
 /**
- * 儲存當前專案
- * @param project - 專案資料
+ * 專案控制模式
  */
-export async function saveCurrentProject(project: Project): Promise<void> {
-    await invoke('save_current_project', { project });
+export enum ProjectControlMode {
+    Streaming = 'Streaming',
+    Desktop = 'Desktop',
+    Discord = 'Discord'
 }
 
 /**
- * 清除當前專案
+ * 專案資料結構（匹配後端 ProjectData）
  */
-export async function clearCurrentProject(): Promise<void> {
-    await invoke('clear_current_project');
+export interface ProjectData {
+    name: string;
+    path: string;
+    description: string;
+    mode: ProjectControlMode;
+    plugins: string[];
+    created_at: number; // SystemTime as milliseconds
+    last_opened: number; // SystemTime as milliseconds
 }
 
 /**
- * 載入當前專案
- * @returns 當前專案或 null
+ * 創建新專案
  */
-export async function loadCurrentProject(): Promise<Project | null> {
-    return await invoke<Project | null>('load_current_project');
+export async function createProject(
+    name: string,
+    path: string,
+    description: string,
+    mode: ProjectControlMode
+): Promise<void> {
+    await invoke('create_project', { name, path, description, mode });
 }
 
 /**
  * 獲取最近的專案列表
- * @returns 最近專案列表
  */
-export async function getRecentProjects(): Promise<Array<{ name: string; path: string }>> {
-    return await invoke<Array<{ name: string; path: string }>>('get_recent_projects');
+export async function getRecentProjects(): Promise<ProjectData[]> {
+    return await invoke<ProjectData[]>('get_recent_projects');
 }
 
 /**
- * 新增專案到最近列表
- * @param project - 專案資料（名稱和路徑）
- * @returns 更新後的最近專案列表
+ * 通過名稱獲取專案
  */
-export async function addRecentProject(project: { name: string; path: string }): Promise<Array<{ name: string; path: string }>> {
-    return await invoke<Array<{ name: string; path: string }>>('add_recent_project', { project });
+export async function getProjectByName(name: string): Promise<ProjectData | null> {
+    return await invoke<ProjectData | null>('get_project_by_name', { name });
 }
 
 /**
- * 從最近列表移除專案
- * @param path - 專案路徑
- * @returns 更新後的最近專案列表
+ * 移除專案
  */
-export async function removeRecentProject(path: string): Promise<Array<{ name: string; path: string }>> {
-    return await invoke<Array<{ name: string; path: string }>>('remove_recent_project', { path });
+export async function removeProject(name: string): Promise<boolean> {
+    return await invoke<boolean>('remove_project', { name });
 }
 
 /**
- * 更新最近專案的名稱
- * @param path - 專案路徑
- * @param newName - 新名稱
- * @returns 更新後的最近專案列表
+ * 更新專案名稱
  */
-export async function updateRecentProjectName(path: string, newName: string): Promise<Array<{ name: string; path: string }>> {
-    return await invoke<Array<{ name: string; path: string }>>('update_recent_project_name', { path, newName });
+export async function updateProjectName(oldName: string, newName: string): Promise<void> {
+    await invoke('update_project_name', { oldName, newName });
 }
 
-/*
- * ===== 後端需要實作的 Rust Commands =====
- * 
- * 在 src-tauri/src/lib.rs 或相關檔案中需要實作以下 commands：
- * 
- * #[tauri::command]
- * async fn save_current_project(project: Project) -> Result<(), String> {
- *     // 儲存專案到檔案系統或資料庫
- * }
- * 
- * #[tauri::command]
- * async fn clear_current_project() -> Result<(), String> {
- *     // 清除當前專案
- * }
- * 
- * #[tauri::command]
- * async fn load_current_project() -> Result<Option<Project>, String> {
- *     // 載入當前專案
- * }
- * 
- * #[tauri::command]
- * async fn get_recent_projects() -> Result<Vec<RecentProject>, String> {
- *     // 取得最近專案列表
- * }
- * 
- * #[tauri::command]
- * async fn add_recent_project(project: RecentProject) -> Result<Vec<RecentProject>, String> {
- *     // 新增到最近專案列表
- *     // 需處理：去重、限制數量（最多10個）
- * }
- * 
- * #[tauri::command]
- * async fn remove_recent_project(path: String) -> Result<Vec<RecentProject>, String> {
- *     // 從最近列表移除
- * }
- * 
- * #[tauri::command]
- * async fn update_recent_project_name(path: String, new_name: String) -> Result<Vec<RecentProject>, String> {
- *     // 更新最近專案的名稱
- * }
- * 
- * 資料結構建議：
- * 
- * #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
- * struct Project {
- *     name: String,
- *     path: String,
- *     plugins: Vec<String>,
- * }
- * 
- * #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
- * struct RecentProject {
- *     name: String,
- *     path: String,
- * }
+/**
+ * 更新專案描述
  */
+export async function updateProjectDescription(name: string, description: string): Promise<void> {
+    await invoke('update_project_description', { name, description });
+}
+
+/**
+ * 添加插件到專案
+ */
+export async function addPluginToProject(projectName: string, pluginId: string): Promise<void> {
+    await invoke('add_plugin_to_project', { projectName, pluginId });
+}
+
+/**
+ * 從專案移除插件
+ */
+export async function removePluginFromProject(projectName: string, pluginId: string): Promise<void> {
+    await invoke('remove_plugin_from_project', { projectName, pluginId });
+}
+
+/**
+ * 啟動專案
+ */
+export async function launchProject(name: string): Promise<void> {
+    await invoke('launch_project', { name });
+}
+
+/**
+ * 停止專案
+ */
+export async function stopProject(name: string): Promise<void> {
+    await invoke('stop_project', { name });
+}
+
+/**
+ * 獲取專案運行狀態
+ */
+export async function getProjectStatus(name: string): Promise<'running' | 'stopped'> {
+    return await invoke<'running' | 'stopped'>('get_project_status', { name });
+}
