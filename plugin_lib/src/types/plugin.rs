@@ -89,5 +89,14 @@ macro_rules! declare_plugin {
             let boxed: Box<dyn $crate::types::Plugin> = Box::new(object);
             Box::into_raw(boxed)
         }
+
+        #[no_mangle]
+        pub extern "C" fn _plugin_destroy(plugin: *mut dyn $crate::types::Plugin) {
+            if plugin.is_null() {
+                return;
+            }
+            
+            unsafe { Box::from_raw(plugin); }
+        }
     };
 }
