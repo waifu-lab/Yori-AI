@@ -9,9 +9,14 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"format": "prettier --check .",
+		"format:fix": "prettier --write .",
+		"lint": "biome check .",
+		"lint:fix": "biome check . --fix"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.2.5",
 		"@fontsource/fira-mono": "^5.0.0",
 		"@neoconfetti/svelte": "^2.0.0",
 		"@sveltejs/adapter-auto": "^6.0.0",
@@ -20,6 +25,9 @@
 		"@tailwindcss/typography": "^0.5.15",
 		"@tailwindcss/vite": "^4.0.0",
 		"@tauri-apps/cli": "^2.8.4",
+		"prettier": "^3.6.2",
+		"prettier-plugin-svelte": "^3.4.0",
+		"prettier-plugin-tailwindcss": "^0.6.14",
 		"svelte": "^5.25.0",
 		"svelte-check": "^4.0.0",
 		"tailwindcss": "^4.0.0",
