@@ -12,6 +12,7 @@ mod utils;
 
 mod error;
 mod state;
+mod launcher;
 
 i18n!("locales", fallback = "zh-TW");
 
@@ -24,9 +25,15 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::initialize,
             commands::create_project,
+            commands::delete_project,
+            commands::save_project,
+            commands::list_recent_projects,
+            commands::launch_project,
         ])
         .setup(|app| {
-            app.state::<state::AppState>().project_manager.write().set_handle(&app.handle());
+            app.state::<state::AppState>()
+                .project_manager.write()
+                .set_handle(&app.handle());
             Ok(())
         })
         .run(tauri::generate_context!())

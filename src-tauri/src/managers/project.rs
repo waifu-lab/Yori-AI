@@ -6,6 +6,7 @@ use crate::{
 pub struct ProjectManager {
     app: Option<tauri::AppHandle>,
     projects: Vec<ProjectData>,
+    launching_project: Option<uuid::Uuid>,
 }
 
 impl ProjectManager {
@@ -13,6 +14,7 @@ impl ProjectManager {
         Self {
             app: None,
             projects: Vec::new(),
+            launching_project: None,
         }
     }
 
@@ -20,20 +22,40 @@ impl ProjectManager {
         self.app = Some(app.clone());
     }
 
-    pub fn get_recent_projects(&self) -> Vec<&ProjectData> {
-        self.projects.iter().take(10).collect()
+    pub fn get_handle(&self) -> Option<tauri::AppHandle> {
+        self.app.clone()
+    }
+
+    pub fn get_recent_projects(&self) -> Vec<ProjectData> {
+        self.projects.iter().take(10).cloned().collect()
+    }
+
+    pub fn get_project(&self, id: uuid::Uuid) -> Option<ProjectData> {
+        self.projects.iter().find(|p| p.id() == id).cloned()
     }
 
     pub fn add_project(&mut self, project: ProjectData) {
         self.projects.push(project);
     }
 
-    pub fn remove_project(&mut self, name: &str) -> bool {
-        if let Some(pos) = self.projects.iter().position(|p| p.name() == name) {
+    pub fn remove_project(&mut self, id: uuid::Uuid) -> bool {
+        if let Some(pos) = self.projects.iter().position(|p| p.id() == id) {
             self.projects.remove(pos);
             true
         } else {
             false
+        }
+    }
+
+    pub fn toggle_launching(&mut self, id: uuid::Uuid) {
+        if let Some(current) = self.launching_project {
+            if current == id {
+                self.launching_project = None;
+            } else {
+                self.launching_project = Some(id);
+            }
+        } else {
+            self.launching_project = Some(id);
         }
     }
 

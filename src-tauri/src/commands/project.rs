@@ -1,4 +1,12 @@
-use crate::{models::{ProjectControlMode, ProjectData}, state::AppState};
+use std::thread;
+
+use crate::{
+    error::BackendError,
+    launcher::create_launcher,
+    models::{ProjectControlMode, ProjectData},
+    state::AppState,
+    utils::storage::save_project as save_project_fn
+};
 
 #[tauri::command]
 pub fn create_project(
@@ -13,4 +21,47 @@ pub fn create_project(
     let id = project.id();
     manager.add_project(project);
     Ok(id)
+}
+
+#[tauri::command]
+pub fn delete_project(state: tauri::State<AppState>, id: uuid::Uuid) -> Result<bool, String> {
+    let mut manager = state.project_manager.write();
+    Ok(manager.remove_project(id))
+}
+
+#[tauri::command]
+pub fn save_project(state: tauri::State<AppState>, project: ProjectData) -> Result<(), String> {
+    save_project_fn(&state.project_manager.read().get_handle().unwrap(), &project).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_recent_projects(state: tauri::State<AppState>) -> Result<Vec<ProjectData>, String> {
+    let manager = state.project_manager.read();
+    Ok(manager.get_recent_projects())
+}
+
+#[tauri::command]
+pub fn launch_project(state: tauri::State<AppState>, id: uuid::Uuid) -> Result<(), String> {
+    let mut manager = state.project_manager.write();
+    let launcher = create_launcher(manager.get_project(id.clone())
+        .ok_or(BackendError::ProjectNotFound)
+        .map_err(|e| e.to_string())?);
+    let (tx, rx) = crossbeam_channel::unbounded::<Result<i32, String>>();
+    let launch_thread = move || {
+        tx.send(launcher.launch().map_err(|e| e.to_string())).unwrap();
+    };
+
+    let receive_thread = move || {
+        match rx.recv() {
+            Ok(_exit_code) => {
+                // Handle success or failure
+            },
+            Err(_) => ()
+        }
+    };
+
+    thread::spawn(launch_thread);
+    thread::spawn(receive_thread);
+    manager.toggle_launching(id);
+    Ok(())
 }

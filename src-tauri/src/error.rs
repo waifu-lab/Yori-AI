@@ -20,4 +20,8 @@ pub enum BackendError {
     SerializationFailed(bincode::Error),
     #[error("Deserialization failed: {0}")]
     DeserializationFailed(bincode::Error),
+
+    // Project errors
+    #[error("Project not found")]
+    ProjectNotFound,
 }

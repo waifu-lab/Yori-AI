@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ProjectData {
     id: uuid::Uuid,
     name: String,
@@ -14,7 +14,7 @@ pub struct ProjectData {
     metadata: ProjectMetadata,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Copy)]
 pub enum ProjectControlMode {
     Streaming,
     Desktop,
@@ -22,7 +22,7 @@ pub enum ProjectControlMode {
     // Add more modes as needed
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ProjectMetadata {
     plugin_data: HashMap<String, String>
     // Add metadata fields as needed
@@ -32,7 +32,7 @@ impl ProjectData {
     pub fn id(&self) -> uuid::Uuid {
         self.id
     }
-    
+
     pub fn name(&self) -> String {
         self.name.clone()
     }
