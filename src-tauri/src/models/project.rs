@@ -24,7 +24,7 @@ pub enum ProjectControlMode {
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct ProjectMetadata {
-    plugin_data: HashMap<String, String>
+    plugin_data: HashMap<String, (String, String)>, // (type, value)
     // Add metadata fields as needed
 }
 

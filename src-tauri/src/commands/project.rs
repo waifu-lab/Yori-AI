@@ -35,6 +35,12 @@ pub fn save_project(state: tauri::State<AppState>, project: ProjectData) -> Resu
 }
 
 #[tauri::command]
+pub fn reload_projects(state: tauri::State<AppState>) -> Result<(), String> {
+    let mut manager = state.project_manager.write();
+    manager.initialize().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn list_recent_projects(state: tauri::State<AppState>) -> Result<Vec<ProjectData>, String> {
     let manager = state.project_manager.read();
     Ok(manager.get_recent_projects())
@@ -42,8 +48,8 @@ pub fn list_recent_projects(state: tauri::State<AppState>) -> Result<Vec<Project
 
 #[tauri::command]
 pub fn launch_project(state: tauri::State<AppState>, id: uuid::Uuid) -> Result<(), String> {
-    let mut manager = state.project_manager.write();
-    let launcher = create_launcher(manager.get_project(id.clone())
+    let manager = state.project_manager.clone();
+    let launcher = create_launcher(manager.read().get_project(id.clone())
         .ok_or(BackendError::ProjectNotFound)
         .map_err(|e| e.to_string())?);
     let (tx, rx) = crossbeam_channel::unbounded::<Result<i32, String>>();
@@ -51,9 +57,12 @@ pub fn launch_project(state: tauri::State<AppState>, id: uuid::Uuid) -> Result<(
         tx.send(launcher.launch().map_err(|e| e.to_string())).unwrap();
     };
 
+    let id_cloned = id.clone();
+    let manager_cloned = state.project_manager.clone();
     let receive_thread = move || {
         match rx.recv() {
             Ok(_exit_code) => {
+                manager_cloned.write().toggle_launching(id_cloned);
                 // Handle success or failure
             },
             Err(_) => ()
@@ -62,6 +71,6 @@ pub fn launch_project(state: tauri::State<AppState>, id: uuid::Uuid) -> Result<(
 
     thread::spawn(launch_thread);
     thread::spawn(receive_thread);
-    manager.toggle_launching(id);
+    manager.write().toggle_launching(id);
     Ok(())
 }

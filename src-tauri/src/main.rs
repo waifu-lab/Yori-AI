@@ -27,6 +27,7 @@ fn main() {
             commands::create_project,
             commands::delete_project,
             commands::save_project,
+            commands::reload_projects,
             commands::list_recent_projects,
             commands::launch_project,
         ])

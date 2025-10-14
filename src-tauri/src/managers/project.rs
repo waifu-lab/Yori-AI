@@ -61,9 +61,7 @@ impl ProjectManager {
 
     pub fn initialize(&mut self) -> anyhow::Result<()> {
         if let Some(app) = &self.app {
-            let projects = load_projects(app)?;
-            self.projects.clear();
-            self.projects.extend(projects);
+            self.projects = load_projects(app)?;
             Ok(())
         } else {
             Err(anyhow::anyhow!("App handle is not set"))

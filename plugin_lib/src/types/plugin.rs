@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Plugin metadata information
+use crate::types::Event;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginMetadata {
     pub id: String,
@@ -11,25 +12,62 @@ pub struct PluginMetadata {
     pub description: String,
 }
 
-/// Plugin context provided by the host application
-pub trait PluginContext: Send + Sync {
-    /// Get application version
-    fn app_version(&self) -> &str;
-    
-    /// Get plugin data directory
-    fn data_dir(&self) -> &str;
-    
-    /// Get configuration value
-    fn get_config(&self, key: &str) -> Option<String>;
-    
-    /// Set configuration value
-    fn set_config(&mut self, key: &str, value: String) -> anyhow::Result<()>;
-    
-    /// Log message
-    fn log(&self, level: LogLevel, message: &str);
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub enum MimeType {
+    #[default]
+    TextPlain,
+    TextHtml,
+    ApplicationJson,
+    ImagePng,
+    ImageJpeg,
+    AudioMpeg,
+    VideoMp4,
+    Other(String),
 }
 
-/// Log level for plugin logging
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum PluginData {
+    String {
+        value: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        max_length: Option<usize>,
+    },
+    Integer {
+        value: i64,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        min: Option<i64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        max: Option<i64>,
+    },
+    Float {
+        value: f64,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        min: Option<f64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        max: Option<f64>,
+    },
+    Boolean {
+        value: bool,
+    },
+    Options {
+        value: String,
+        placeholder: String,
+        options: Vec<String>,
+    },
+    Stream {
+        value: String, // endpoint URL
+        #[serde(default)]
+        mime_type: MimeType,
+    },
+    Array {
+        value: Box<Vec<PluginData>>
+    },
+    Object {
+        value: Box<HashMap<String, PluginData>>
+    },
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum LogLevel {
     Trace,
@@ -37,48 +75,193 @@ pub enum LogLevel {
     Info,
     Warn,
     Error,
+    Fatal,
 }
 
-/// Main Plugin trait that all plugins must implement
+pub trait PluginContext: Send + Sync {
+    fn app_version(&self) -> &str;
+    fn data_dir(&self) -> &str;
+
+    fn get_config(&self, key: &str) -> Option<String>;
+    fn set_config(&mut self, key: &str, value: String) -> anyhow::Result<()>;
+    
+    fn log(&self, level: LogLevel, message: &str);
+}
+
 pub trait Plugin: Send + Sync {
-    /// Get plugin metadata
     fn metadata(&self) -> &PluginMetadata;
     
-    /// Check if plugin is enabled
-    fn is_enabled(&self) -> bool;
-    
-    /// Check if plugin is deprecated
     fn is_deprecated(&self) -> bool;
-    
-    /// Check if plugin needs upgrade
     fn need_upgrade(&self) -> bool;
     
-    /// Initialize plugin with context
     fn initialize(&mut self, context: &mut dyn PluginContext) -> anyhow::Result<()>;
+    fn start(&mut self) -> anyhow::Result<()>;
+    fn stop(&mut self) -> anyhow::Result<()>;
+    fn reset(&mut self, context: &mut dyn PluginContext) -> anyhow::Result<()>;
+
+    fn emit(&self, event: Event) -> anyhow::Result<()>;
+    fn on(&mut self, event: Event) -> anyhow::Result<()>;
     
-    /// Shutdown plugin
-    fn shutdown(&mut self) -> anyhow::Result<()>;
-    
-    /// Handle event from host application
-    fn on_event(&mut self, event: &str, data: Option<&str>) -> anyhow::Result<()>;
-    
-    /// Get plugin settings schema (JSON schema)
-    fn settings_schema(&self) -> Option<String> {
-        None
-    }
-    
-    /// Get current plugin settings
-    fn get_settings(&self) -> HashMap<String, String> {
+    fn get_settings(&self) -> HashMap<String, PluginData> {
         HashMap::new()
     }
-    
-    /// Update plugin settings
-    fn set_settings(&mut self, _settings: HashMap<String, String>) -> anyhow::Result<()> {
+
+    fn update_settings(&mut self, settings: HashMap<String, PluginData>) -> anyhow::Result<()> {
+        let _ = settings;
         Ok(())
     }
 }
 
-/// Macro for plugin entry point
+impl PluginData {
+    pub fn string(value: String) -> Self {
+        PluginData::String { value, max_length: None }
+    }
+
+    pub fn string_with_max(value: String, max_length: usize) -> Self {
+        PluginData::String { value, max_length: Some(max_length) }
+    }
+
+    pub fn integer(value: i64) -> Self {
+        PluginData::Integer { value, min: None, max: None }
+    }
+
+    pub fn integer_with_range(value: i64, min: Option<i64>, max: Option<i64>) -> Self {
+        PluginData::Integer { value, min, max }
+    }
+
+    pub fn float(value: f64) -> Self {
+        PluginData::Float { value, min: None, max: None }
+    }
+
+    pub fn float_with_range(value: f64, min: Option<f64>, max: Option<f64>) -> Self {
+        PluginData::Float { value, min, max }
+    }
+
+    pub fn boolean(value: bool) -> Self {
+        PluginData::Boolean { value }
+    }
+
+    pub fn options(value: String, options: Vec<String>) -> Self {
+        PluginData::Options { value, options, placeholder: String::new() }
+    }
+
+    pub fn options_with_placeholder(value: String, options: Vec<String>, placeholder: String) -> Self {
+        PluginData::Options { value, options, placeholder }
+    }
+
+    pub fn stream(value: String) -> Self {
+        PluginData::Stream { value, mime_type: MimeType::TextPlain }
+    }
+
+    pub fn stream_with_mime(value: String, mime_type: MimeType) -> Self {
+        PluginData::Stream { value, mime_type }
+    }
+
+    pub fn array(value: Vec<PluginData>) -> Self {
+        PluginData::Array { value: Box::new(value) }
+    }
+
+    pub fn object(value: HashMap<String, PluginData>) -> Self {
+        PluginData::Object { value: Box::new(value) }
+    }
+    
+    pub fn is_string(&self) -> bool {
+        matches!(self, PluginData::String { .. })
+    }
+
+    pub fn is_integer(&self) -> bool {
+        matches!(self, PluginData::Integer { .. })
+    }
+
+    pub fn is_float(&self) -> bool {
+        matches!(self, PluginData::Float { .. })
+    }
+
+    pub fn is_boolean(&self) -> bool {
+        matches!(self, PluginData::Boolean { .. })
+    }
+
+    pub fn is_options(&self) -> bool {
+        matches!(self, PluginData::Options { .. })
+    }
+
+    pub fn is_stream(&self) -> bool {
+        matches!(self, PluginData::Stream { .. })
+    }
+
+    pub fn is_array(&self) -> bool {
+        matches!(self, PluginData::Array { .. })
+    }
+
+    pub fn is_object(&self) -> bool {
+        matches!(self, PluginData::Object { .. })
+    }
+
+    pub fn as_string(&self) -> Option<String> {
+        if let PluginData::String { value, .. } = self {
+            Some(value.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_integer(&self) -> Option<i64> {
+        if let PluginData::Integer { value, .. } = self {
+            Some(*value)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_float(&self) -> Option<f64> {
+        if let PluginData::Float { value, .. } = self {
+            Some(*value)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_boolean(&self) -> Option<bool> {
+        if let PluginData::Boolean { value } = self {
+            Some(*value)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_options(&self) -> Option<(String, Vec<String>, String)> {
+        if let PluginData::Options { value, options, placeholder } = self {
+            Some((value.clone(), options.clone(), placeholder.clone()))
+        } else {
+            None
+        }
+    }
+
+    pub fn as_stream(&self) -> Option<(String, MimeType)> {
+        if let PluginData::Stream { value, mime_type } = self {
+            Some((value.clone(), mime_type.clone()))
+        } else {
+            None
+        }
+    }
+
+    pub fn as_array(&self) -> Option<Vec<PluginData>> {
+        if let PluginData::Array { value } = self {
+            Some(*value.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_object(&self) -> Option<HashMap<String, PluginData>> {
+        if let PluginData::Object { value } = self {
+            Some(*value.clone())
+        } else {
+            None
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! declare_plugin {
     ($plugin_type:ty, $constructor:path) => {
