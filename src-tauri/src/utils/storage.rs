@@ -1,14 +1,13 @@
 use std::fs;
 
-use serde::Serialize;
 use tauri::{Manager, Runtime};
 
-use crate::{error::BackendError, models::ProjectData};
+use crate::{error::BackendError, domain::ProjectData};
 
 pub fn save_project<R: Runtime>(app: &impl Manager<R>, project: &ProjectData) -> anyhow::Result<()> {
-    let config_dir = app.path().config_dir()
+    let data_dir = app.path().data_dir()
         .or(Err(BackendError::InvalidPath))?;
-    let file_path = config_dir
+    let file_path = data_dir
         .join("projects")
         .join(format!("{}.proj", project.name()));
     fs::write(file_path, bincode::serialize(project)
@@ -17,9 +16,9 @@ pub fn save_project<R: Runtime>(app: &impl Manager<R>, project: &ProjectData) ->
 }
 
 pub fn load_project<R: Runtime>(app: &impl Manager<R>, name: &str) -> anyhow::Result<ProjectData> {
-    let config_dir = app.path().config_dir()
+    let data_dir = app.path().data_dir()
         .or(Err(BackendError::InvalidPath))?;
-    let file_path = config_dir
+    let file_path = data_dir
         .join("projects")
         .join(format!("{}.proj", name));
     let data = fs::read(file_path)
@@ -30,9 +29,9 @@ pub fn load_project<R: Runtime>(app: &impl Manager<R>, name: &str) -> anyhow::Re
 }
 
 pub fn load_projects<R: Runtime>(app: &impl Manager<R>) -> anyhow::Result<Vec<ProjectData>> {
-    let config_dir = app.path().config_dir()
+    let data_dir = app.path().data_dir()
         .or(Err(BackendError::InvalidPath))?;
-    let projects_dir = config_dir.join("projects");
+    let projects_dir = data_dir.join("projects");
     if !projects_dir.exists() {
         fs::create_dir_all(&projects_dir)
             .map_err(BackendError::IoError)?;

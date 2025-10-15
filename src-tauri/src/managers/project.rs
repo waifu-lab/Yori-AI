@@ -1,5 +1,5 @@
 use crate::{
-    models::ProjectData,
+    domain::ProjectData,
     utils::storage::load_projects
 };
 

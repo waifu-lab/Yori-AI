@@ -75,17 +75,12 @@ pub enum LogLevel {
     Info,
     Warn,
     Error,
-    Fatal,
 }
 
-pub trait PluginContext: Send + Sync {
+pub trait AppContext: Send + Sync {
     fn app_version(&self) -> &str;
-    fn data_dir(&self) -> &str;
-
     fn get_config(&self, key: &str) -> Option<String>;
-    fn set_config(&mut self, key: &str, value: String) -> anyhow::Result<()>;
-    
-    fn log(&self, level: LogLevel, message: &str);
+    fn log(&self, id: &str, level: LogLevel, message: &str);
 }
 
 pub trait Plugin: Send + Sync {
@@ -94,10 +89,10 @@ pub trait Plugin: Send + Sync {
     fn is_deprecated(&self) -> bool;
     fn need_upgrade(&self) -> bool;
     
-    fn initialize(&mut self, context: &mut dyn PluginContext) -> anyhow::Result<()>;
+    fn initialize(&mut self, context: &mut dyn AppContext) -> anyhow::Result<()>;
     fn start(&mut self) -> anyhow::Result<()>;
     fn stop(&mut self) -> anyhow::Result<()>;
-    fn reset(&mut self, context: &mut dyn PluginContext) -> anyhow::Result<()>;
+    fn reset(&mut self, context: &mut dyn AppContext) -> anyhow::Result<()>;
 
     fn emit(&self, event: Event) -> anyhow::Result<()>;
     fn on(&mut self, event: Event) -> anyhow::Result<()>;
@@ -258,6 +253,18 @@ impl PluginData {
             Some(*value.clone())
         } else {
             None
+        }
+    }
+}
+
+impl Into<log::Level> for LogLevel {
+    fn into(self) -> log::Level {
+        match self {
+            LogLevel::Trace => log::Level::Trace,
+            LogLevel::Debug => log::Level::Debug,
+            LogLevel::Info  => log::Level::Info,
+            LogLevel::Warn  => log::Level::Warn,
+            LogLevel::Error => log::Level::Error,
         }
     }
 }

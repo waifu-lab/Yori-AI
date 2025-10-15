@@ -6,6 +6,7 @@ use crate::managers::{ProjectManager, PluginManager};
 pub struct AppState {
     pub project_manager: Arc<RwLock<ProjectManager>>,
     pub plugin_manager: Arc<RwLock<PluginManager>>,
+    pub log_level: log::LevelFilter,
 }
 
 impl AppState {
@@ -13,6 +14,7 @@ impl AppState {
         Self {
             project_manager: Arc::new(RwLock::new(ProjectManager::new())),
             plugin_manager: Arc::new(RwLock::new(PluginManager::new())),
+            log_level: log::LevelFilter::Trace,
         }
     }
 }

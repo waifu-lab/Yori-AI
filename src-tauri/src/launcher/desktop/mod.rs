@@ -1,4 +1,4 @@
-use crate::{launcher::Launcher, models::ProjectData};
+use crate::{launcher::Launcher, domain::ProjectData};
 
 pub struct DesktopLauncher {
     project: ProjectData,
