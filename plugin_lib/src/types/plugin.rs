@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::types::Event;
+use crate::types::EventBus;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginMetadata {
@@ -80,11 +80,15 @@ pub enum LogLevel {
 pub trait AppContext: Send + Sync {
     fn app_version(&self) -> &str;
     fn get_config(&self, key: &str) -> Option<String>;
+    fn event_bus(&mut self) -> &mut dyn EventBus;
     fn log(&self, id: &str, level: LogLevel, message: &str);
 }
 
 pub trait Plugin: Send + Sync {
     fn metadata(&self) -> &PluginMetadata;
+    fn path(&self) -> &str {
+        ""
+    }
     
     fn is_deprecated(&self) -> bool;
     fn need_upgrade(&self) -> bool;
@@ -93,9 +97,9 @@ pub trait Plugin: Send + Sync {
     fn start(&mut self) -> anyhow::Result<()>;
     fn stop(&mut self) -> anyhow::Result<()>;
     fn reset(&mut self, context: &mut dyn AppContext) -> anyhow::Result<()>;
-
-    fn emit(&self, event: Event) -> anyhow::Result<()>;
-    fn on(&mut self, event: Event) -> anyhow::Result<()>;
+    fn destroy(&mut self) -> anyhow::Result<()> {
+        Ok(())
+    }
     
     fn get_settings(&self) -> HashMap<String, PluginData> {
         HashMap::new()

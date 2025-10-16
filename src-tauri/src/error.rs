@@ -24,4 +24,10 @@ pub enum BackendError {
     // Project errors
     #[error("Project not found")]
     ProjectNotFound,
+
+    // Plugin errors
+    #[error(transparent)]
+    PluginLoadFailed(#[from] libloading::Error),
+    #[error("Invalid plugin format")]
+    InvalidPluginFormat,
 }

@@ -2,63 +2,52 @@ use fern::{colors::{Color, ColoredLevelConfig}, Output};
 use log::{debug, error, info, trace, warn};
 use tauri::Emitter;
 
-pub struct Logger {
-    app: tauri::AppHandle,
-    level_filter: log::LevelFilter,
-}
-
 pub struct FrontendOutput(tauri::AppHandle);
 
-impl Logger {
-    pub fn new(app: tauri::AppHandle, level_filter: log::LevelFilter) -> Self {
-        Self { app, level_filter }
-    }
+pub fn info(id: &str, message: &str) {
+    info!("[{id}] {message}");
+}
 
-    pub fn init(&self) -> anyhow::Result<()> {
-        let colors = ColoredLevelConfig::new()
-            .error(Color::Red)
-            .warn(Color::Yellow)
-            .info(Color::Green)
-            .debug(Color::Blue)
-            .trace(Color::Magenta);
+pub fn warn(id: &str, message: &str) {
+    warn!("[{id}] {message}");
+}
 
-        fern::Dispatch::new()
-            .format(move |out, message, record| {
-                out.finish(format_args!(
-                    "[{}][{}]{}",
-                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                    colors.color(record.level()),
-                    message
-                ))
-            })
-            .level(self.level_filter)
-            .chain(std::io::stdout())
-            .chain(FrontendOutput(self.app.clone()))
-            .apply()?;
+pub fn error(id: &str, message: &str) {
+    error!("[{id}] {message}");
+}
 
-        self.info("system.logger", &format!("Logger initialized with level: {:?}", self.level_filter));
-        Ok(())
-    }
+pub fn debug(id: &str, message: &str) {
+    debug!("[{id}] {message}");
+}
 
-    pub fn info(&self, id: &str, message: &str) {
-        info!("[{id}] {message}");
-    }
+pub fn trace(id: &str, message: &str) {
+    trace!("[{id}] {message}");
+}
 
-    pub fn warn(&self, id: &str, message: &str) {
-        warn!("[{id}] {message}");
-    }
+pub fn init(app: &tauri::AppHandle, level_filter: log::LevelFilter) -> anyhow::Result<()> {
+    let colors = ColoredLevelConfig::new()
+        .error(Color::Red)
+        .warn(Color::Yellow)
+        .info(Color::Green)
+        .debug(Color::Blue)
+        .trace(Color::Magenta);
 
-    pub fn error(&self, id: &str, message: &str) {
-        error!("[{id}] {message}");
-    }
+    fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "[{}][{}]{}",
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                colors.color(record.level()),
+                message
+            ))
+        })
+        .level(level_filter)
+        .chain(std::io::stdout())
+        .chain(FrontendOutput(app.clone()))
+        .apply()?;
 
-    pub fn debug(&self, id: &str, message: &str) {
-        debug!("[{id}] {message}");
-    }
-
-    pub fn trace(&self, id: &str, message: &str) {
-        trace!("[{id}] {message}");
-    }
+    info("system.logger", &format!("Logger initialized with level: {:?}", level_filter));
+    Ok(())
 }
 
 impl Into<Output> for FrontendOutput {

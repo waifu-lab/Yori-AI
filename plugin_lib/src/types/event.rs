@@ -3,6 +3,12 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+pub trait EventBus: Send + Sync + 'static {
+    fn emit(&mut self, event: Event);
+    fn off(&mut self, id: uuid::Uuid);
+    fn on(&mut self, name: &str, handler: Box<dyn FnMut(Event) + Send + Sync>) -> uuid::Uuid;
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {
     name: String,
