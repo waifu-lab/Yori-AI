@@ -1,1 +1,2 @@
-mod obs;
+mod modules;
+mod plugins;

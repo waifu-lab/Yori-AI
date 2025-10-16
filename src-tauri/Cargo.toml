@@ -30,3 +30,5 @@ log = { workspace = true }
 libloading = "0.8.9"
 fern = { version = "0.7.1", features = ["colored"] }
 chrono = "0.4.42"
+wgpu = "24.0.5"
+live2d-cubism-core-sys = { git = "https://github.com/James2022-rgb/live2d-cubism-core-sys" }

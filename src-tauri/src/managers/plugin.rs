@@ -1,6 +1,6 @@
 use plugin_lib::types::Plugin;
 
-use crate::{domain::GlobalContext, utils::storage::{copy_plugin, delete_plugin, load_plugin, load_plugins}};
+use crate::{domain::{DynamicPlugin, GlobalContext, PluginExt}, utils::storage::{copy_plugin, delete_plugin, load_plugin, load_plugins}};
 
 pub struct PluginManager {
     app: Option<tauri::AppHandle>,
@@ -27,7 +27,9 @@ impl PluginManager {
         let removed_plugin = self.plugins.pop_if(|plugin| &plugin.metadata().name == plugin_name);
         if let Some(mut plugin) = removed_plugin {
             plugin.destroy().unwrap();
-            delete_plugin(self.app.as_ref().unwrap(), plugin.path()).unwrap();
+            if let Some(dynamic_plugin) = plugin.as_any().downcast_ref::<DynamicPlugin>() {
+                delete_plugin(self.app.as_ref().unwrap(), dynamic_plugin.path()).unwrap();
+            }
         }
     }
 

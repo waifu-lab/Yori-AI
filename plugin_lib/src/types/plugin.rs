@@ -84,11 +84,8 @@ pub trait AppContext: Send + Sync {
     fn log(&self, id: &str, level: LogLevel, message: &str);
 }
 
-pub trait Plugin: Send + Sync {
+pub trait Plugin: Send + Sync + AsAny {
     fn metadata(&self) -> &PluginMetadata;
-    fn path(&self) -> &str {
-        ""
-    }
     
     fn is_deprecated(&self) -> bool;
     fn need_upgrade(&self) -> bool;
@@ -108,6 +105,16 @@ pub trait Plugin: Send + Sync {
     fn update_settings(&mut self, settings: HashMap<String, PluginData>) -> anyhow::Result<()> {
         let _ = settings;
         Ok(())
+    }
+}
+
+pub trait AsAny {
+    fn as_any(&self) -> &dyn std::any::Any;
+}
+
+impl<T: 'static> AsAny for T {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

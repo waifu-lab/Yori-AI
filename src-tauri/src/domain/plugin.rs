@@ -14,9 +14,9 @@ pub struct GlobalContext {
 }
 
 pub struct DynamicPlugin {
-    inner: Option<Box<dyn Plugin>>,
+    inner: Option<Box<dyn Plugin + 'static>>,
     path: PathBuf,
-    _lib: libloading::Library,
+    lib: libloading::Library,
 }
 
 #[derive(Serialize)]
@@ -27,6 +27,12 @@ pub struct PluginData {
     pub description: String,
     pub is_deprecated: bool,
     pub need_upgrade: bool,
+}
+
+pub trait PluginExt {
+    fn path(&self) -> &str {
+        ""
+    }
 }
 
 impl GlobalContext {
@@ -67,17 +73,13 @@ impl AppContext for GlobalContext {
 
 impl DynamicPlugin {
     pub fn new(inner: Box<dyn Plugin>, path: PathBuf, lib: libloading::Library) -> Self {
-        Self { inner: Some(inner), path, _lib: lib }
+        Self { inner: Some(inner), path, lib }
     }
 }
 
 impl Plugin for DynamicPlugin {
     fn metadata(&self) -> &plugin_lib::types::PluginMetadata {
         self.inner.as_ref().map(|inner| inner.metadata()).unwrap()
-    }
-
-    fn path(&self) -> &str {
-        self.path.to_str().unwrap_or("")
     }
 
     fn is_deprecated(&self) -> bool {
@@ -115,10 +117,16 @@ impl Plugin for DynamicPlugin {
     fn destroy(&mut self) -> anyhow::Result<()> {
         self.inner.as_mut().map(|inner| inner.destroy().unwrap()).unwrap();
         Ok(unsafe {
-            self._lib
+            self.lib
                 .get::<unsafe extern "C" fn(*mut dyn Plugin)>(b"_plugin_destroy")?
                 (Box::into_raw(self.inner.take().unwrap()))
         })
+    }
+}
+
+impl PluginExt for DynamicPlugin {
+    fn path(&self) -> &str {
+        self.path.to_str().unwrap_or("")
     }
 }
 
