@@ -1,6 +1,6 @@
 use plugin_lib::types::Plugin;
 
-use crate::{domain::{DynamicPlugin, GlobalContext, PluginExt}, utils::storage::{copy_plugin, delete_plugin, load_plugin, load_plugins}};
+use crate::{schema::{DynamicPlugin, GlobalContext, PluginExt}, utils::storage::{copy_plugin, delete_plugin, load_plugin, load_plugins}};
 
 pub struct PluginManager {
     app: Option<tauri::AppHandle>,
@@ -33,7 +33,7 @@ impl PluginManager {
         }
     }
 
-    pub fn list_plugins(&self) -> Vec<crate::domain::PluginData> {
+    pub fn list_plugins(&self) -> Vec<crate::schema::PluginData> {
         self.plugins.iter().map(|plugin| plugin.into()).collect()
     }
 

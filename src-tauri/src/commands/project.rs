@@ -3,7 +3,7 @@ use std::thread;
 use crate::{
     error::BackendError,
     launcher::create_launcher,
-    domain::{ProjectControlMode, ProjectData},
+    schema::{ProjectControlMode, ProjectData},
     state::AppState,
     utils::storage::save_project as save_project_fn
 };

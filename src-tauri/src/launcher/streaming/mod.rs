@@ -1,4 +1,4 @@
-use crate::{launcher::Launcher, domain::ProjectData};
+use crate::{launcher::Launcher, schema::ProjectData};
 
 pub struct StreamingLauncher {
     project: ProjectData,

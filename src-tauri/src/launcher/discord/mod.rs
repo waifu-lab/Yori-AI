@@ -1,4 +1,4 @@
-use crate::{domain::ProjectData, launcher::Launcher};
+use crate::{schema::ProjectData, launcher::Launcher};
 
 pub struct DiscordLauncher {
     project: ProjectData,

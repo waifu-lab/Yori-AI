@@ -3,7 +3,7 @@ use std::{fs, path::{Path, PathBuf}};
 use plugin_lib::types::Plugin;
 use tauri::{AppHandle, Manager};
 
-use crate::{domain::{DynamicPlugin, ProjectData}, error::BackendError};
+use crate::{schema::{DynamicPlugin, ProjectData}, error::BackendError};
 
 pub fn save_project(app: &AppHandle, project: &ProjectData) -> anyhow::Result<()> {
     let data_dir = app.path().data_dir()

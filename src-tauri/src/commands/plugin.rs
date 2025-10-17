@@ -1,4 +1,4 @@
-use crate::{domain::PluginData, state::AppState};
+use crate::{schema::PluginData, state::AppState};
 
 #[tauri::command]
 pub fn add_plugin(state: tauri::State<AppState>, file_path: String) -> Result<(), String> {

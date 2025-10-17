@@ -86,6 +86,7 @@ pub trait AppContext: Send + Sync {
 
 pub trait Plugin: Send + Sync + AsAny {
     fn metadata(&self) -> &PluginMetadata;
+    fn ui_schema(&self) -> crate::ui::UI;
     
     fn is_deprecated(&self) -> bool;
     fn need_upgrade(&self) -> bool;

@@ -10,7 +10,7 @@ extern crate rust_i18n;
 mod commands;
 mod event;
 mod core;
-mod domain;
+mod schema;
 mod managers;
 mod utils;
 

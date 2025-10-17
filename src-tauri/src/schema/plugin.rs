@@ -37,7 +37,7 @@ pub trait PluginExt {
 
 impl GlobalContext {
     pub fn new(app: tauri::AppHandle) -> Self {
-        let event_bus = EventBus::new();
+        let mut event_bus = EventBus::new();
         event_bus.process_events();
         Self { app, event_bus }
     }
@@ -79,43 +79,47 @@ impl DynamicPlugin {
 
 impl Plugin for DynamicPlugin {
     fn metadata(&self) -> &plugin_lib::types::PluginMetadata {
-        self.inner.as_ref().map(|inner| inner.metadata()).unwrap()
+        self.inner.as_ref().unwrap().metadata()
+    }
+
+    fn ui_schema(&self) -> plugin_lib::ui::UI {
+        self.inner.as_ref().unwrap().ui_schema()
     }
 
     fn is_deprecated(&self) -> bool {
-        self.inner.as_ref().map(|inner| inner.is_deprecated()).unwrap_or(false)
+        self.inner.as_ref().unwrap().is_deprecated()
     }
 
     fn need_upgrade(&self) -> bool {
-        self.inner.as_ref().map(|inner| inner.need_upgrade()).unwrap_or(false)
+        self.inner.as_ref().unwrap().need_upgrade()
     }
 
     fn initialize(&mut self, context: &mut dyn AppContext) -> anyhow::Result<()> {
-        self.inner.as_mut().map(|inner| inner.initialize(context)).unwrap_or(Ok(()))
+        self.inner.as_mut().unwrap().initialize(context)
     }
 
     fn start(&mut self) -> anyhow::Result<()> {
-        self.inner.as_mut().map(|inner| inner.start()).unwrap_or(Ok(()))
+        self.inner.as_mut().unwrap().start()
     }
 
     fn stop(&mut self) -> anyhow::Result<()> {
-        self.inner.as_mut().map(|inner| inner.stop()).unwrap_or(Ok(()))
+        self.inner.as_mut().unwrap().stop()
     }
 
     fn reset(&mut self, context: &mut dyn AppContext) -> anyhow::Result<()> {
-        self.inner.as_mut().map(|inner| inner.reset(context)).unwrap_or(Ok(()))
+        self.inner.as_mut().unwrap().reset(context)
     }
 
     fn get_settings(&self) -> std::collections::HashMap<String, plugin_lib::types::PluginData> {
-        self.inner.as_ref().map(|inner| inner.get_settings()).unwrap_or_default()
+        self.inner.as_ref().unwrap().get_settings()
     }
 
     fn update_settings(&mut self, settings: std::collections::HashMap<String, plugin_lib::types::PluginData>) -> anyhow::Result<()> {
-        self.inner.as_mut().map(|inner| inner.update_settings(settings)).unwrap_or(Ok(()))
+        self.inner.as_mut().unwrap().update_settings(settings)
     }
 
     fn destroy(&mut self) -> anyhow::Result<()> {
-        self.inner.as_mut().map(|inner| inner.destroy().unwrap()).unwrap();
+        self.inner.as_mut().unwrap().destroy()?;
         Ok(unsafe {
             self.lib
                 .get::<unsafe extern "C" fn(*mut dyn Plugin)>(b"_plugin_destroy")?

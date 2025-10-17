@@ -1,4 +1,4 @@
-use crate::{domain::{ProjectControlMode, ProjectData}};
+use crate::{schema::{ProjectControlMode, ProjectData}};
 use desktop::DesktopLauncher;
 use streaming::StreamingLauncher;
 use discord::DiscordLauncher;
