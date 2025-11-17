@@ -13,11 +13,14 @@
 		"format": "prettier --check .",
 		"format:fix": "prettier --write .",
 		"lint": "biome check .",
-		"lint:fix": "biome check . --fix"
+		"lint:fix": "biome check . --fix",
+		"tauri:dev": "tauri dev"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.5",
 		"@fontsource/fira-mono": "^5.0.0",
+		"@iconify-json/lucide": "^1.2.73",
+		"@iconify/tailwind4": "^1.1.0",
 		"@neoconfetti/svelte": "^2.0.0",
 		"@sveltejs/adapter-auto": "^6.0.0",
 		"@sveltejs/kit": "^2.22.0",
@@ -40,7 +43,6 @@
 		]
 	},
 	"dependencies": {
-		"@iconify/tailwind": "^1.2.0",
 		"@tauri-apps/api": "^2.8.0",
 		"@tauri-apps/plugin-dialog": "~2.4.0",
 		"@tauri-apps/plugin-store": "~2.4.0"

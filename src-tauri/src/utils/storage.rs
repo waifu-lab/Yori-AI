@@ -6,13 +6,30 @@ use tauri::{AppHandle, Manager};
 use crate::{schema::{DynamicPlugin, ProjectData}, error::BackendError};
 
 pub fn save_project(app: &AppHandle, project: &ProjectData) -> anyhow::Result<()> {
-    let data_dir = app.path().data_dir()
+    let data_dir = app.path().app_data_dir()
         .or(Err(BackendError::InvalidPath))?;
-    let file_path = data_dir
-        .join("projects")
+    let projects_dir = data_dir.join("projects");
+    if !projects_dir.exists() {
+        fs::create_dir_all(&projects_dir)
+            .map_err(BackendError::IoError)?;
+    }
+    let file_path = projects_dir
         .join(format!("{}.proj", project.name()));
     fs::write(file_path, bincode::serialize(project)
         .map_err(BackendError::SerializationFailed)?)?;
+    Ok(())
+}
+
+pub fn delete_project(app: &AppHandle, project_name: &str) -> anyhow::Result<()> {
+    let data_dir = app.path().app_data_dir()
+        .or(Err(BackendError::InvalidPath))?;
+    let file_path = data_dir
+        .join("projects")
+        .join(format!("{}.proj", project_name));
+    if file_path.exists() {
+        fs::remove_file(file_path)
+            .map_err(BackendError::IoError)?;
+    }
     Ok(())
 }
 
@@ -30,7 +47,7 @@ pub fn save_project(app: &AppHandle, project: &ProjectData) -> anyhow::Result<()
 // }
 
 pub fn load_projects(app: &AppHandle) -> anyhow::Result<Vec<ProjectData>> {
-    let data_dir = app.path().data_dir()
+    let data_dir = app.path().app_data_dir()
         .or(Err(BackendError::InvalidPath))?;
     let projects_dir = data_dir.join("projects");
     if !projects_dir.exists() {
@@ -51,12 +68,12 @@ pub fn load_projects(app: &AppHandle) -> anyhow::Result<Vec<ProjectData>> {
             projects.push(project);
         }
     }
-    
+
     Ok(projects)
 }
 
 pub fn copy_plugin<P: AsRef<Path>>(app: &AppHandle, plugin_path: P) -> anyhow::Result<PathBuf> {
-    let data_dir = app.path().data_dir()
+    let data_dir = app.path().app_data_dir()
         .or(Err(BackendError::InvalidPath))?;
     let plugins_dir = data_dir.join("plugins");
     if !plugins_dir.exists() {
@@ -72,7 +89,7 @@ pub fn copy_plugin<P: AsRef<Path>>(app: &AppHandle, plugin_path: P) -> anyhow::R
 }
 
 pub fn delete_plugin<P: AsRef<Path>>(app: &AppHandle, file_name: P) -> anyhow::Result<()> {
-    let data_dir = app.path().data_dir()
+    let data_dir = app.path().app_data_dir()
         .or(Err(BackendError::InvalidPath))?;
     let plugins_dir = data_dir.join("plugins");
     let plugin_path = plugins_dir.join(file_name);
@@ -94,7 +111,7 @@ pub fn load_plugin<P: AsRef<Path>>(_app: &AppHandle, plugin_path: P) -> anyhow::
         return Err(BackendError::InvalidPluginFormat.into());
     }
 
-    unsafe { 
+    unsafe {
         let lib = libloading::Library::new(plugin_path.as_ref())
             .map_err(BackendError::PluginLoadFailed)?;
 
@@ -109,7 +126,7 @@ pub fn load_plugin<P: AsRef<Path>>(_app: &AppHandle, plugin_path: P) -> anyhow::
 }
 
 pub fn load_plugins(app: &AppHandle) -> anyhow::Result<Vec<Box<dyn Plugin>>> {
-    let data_dir = app.path().data_dir()
+    let data_dir = app.path().app_data_dir()
         .or(Err(BackendError::InvalidPath))?;
     let plugins_dir = data_dir.join("plugins");
     if !plugins_dir.exists() {
@@ -117,7 +134,7 @@ pub fn load_plugins(app: &AppHandle) -> anyhow::Result<Vec<Box<dyn Plugin>>> {
             .map_err(BackendError::IoError)?;
         return Ok(vec![]);
     }
-    
+
     #[cfg(windows)]
     let ext = "dll";
     #[cfg(target_os = "linux")]
@@ -129,7 +146,7 @@ pub fn load_plugins(app: &AppHandle) -> anyhow::Result<Vec<Box<dyn Plugin>>> {
         let entry = entry.map_err(BackendError::IoError)?;
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) == Some(ext) {
-            unsafe { 
+            unsafe {
                 let lib = libloading::Library::new(&path)
                     .map_err(BackendError::PluginLoadFailed)?;
 

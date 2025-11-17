@@ -3,5 +3,7 @@
  */
 
 import { writable } from 'svelte/store';
+import type { ProjectData } from '../commands';
 
-// TODO: 添加 stores
+export const projects = writable<ProjectData[]>([]);
+export const currentProject = writable<ProjectData | null>(null);
