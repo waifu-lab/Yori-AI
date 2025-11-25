@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, thread};
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::Sender;
 use parking_lot::Mutex;
 use plugin_lib::types::{EventBus as Bus, Event};
 

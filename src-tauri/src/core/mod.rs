@@ -1,2 +1,3 @@
-mod modules;
-mod plugins;
+mod renderer;
+mod plugin;
+mod model;

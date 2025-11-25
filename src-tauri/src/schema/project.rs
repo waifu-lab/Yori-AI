@@ -19,6 +19,7 @@ pub enum ProjectControlMode {
     Streaming,
     Desktop,
     Discord,
+    Union(u32),
     // Add more modes as needed
 }
 
@@ -96,6 +97,42 @@ impl ProjectData {
             metadata: ProjectMetadata {
                 plugin_data: HashMap::new(),
             },
+        }
+    }
+}
+
+impl std::ops::BitOr for ProjectControlMode {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (ProjectControlMode::Union(a), ProjectControlMode::Union(b)) => {
+                ProjectControlMode::Union(a | b)
+            }
+            (ProjectControlMode::Union(a), other) | (other, ProjectControlMode::Union(a)) => {
+                let b = match other {
+                    ProjectControlMode::Streaming => 0b0001,
+                    ProjectControlMode::Desktop => 0b0010,
+                    ProjectControlMode::Discord => 0b0100,
+                    _ => 0,
+                };
+                ProjectControlMode::Union(a | b)
+            }
+            (a, b) => {
+                let a_bit = match a {
+                    ProjectControlMode::Streaming => 0b0001,
+                    ProjectControlMode::Desktop => 0b0010,
+                    ProjectControlMode::Discord => 0b0100,
+                    _ => 0,
+                };
+                let b_bit = match b {
+                    ProjectControlMode::Streaming => 0b0001,
+                    ProjectControlMode::Desktop => 0b0010,
+                    ProjectControlMode::Discord => 0b0100,
+                    _ => 0,
+                };
+                ProjectControlMode::Union(a_bit | b_bit)
+            }
         }
     }
 }

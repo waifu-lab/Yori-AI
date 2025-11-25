@@ -1,0 +1,5 @@
+{
+    "terminal.integrated.env.windows": {
+        "LIVE2D_CUBISM_SDK_NATIVE_DIR": "C:\\Users\\RexWu\\workspace\\Rust\\AI-Vtuber-Launcher-Tauri\\src-tauri\\libs\\Live2D"
+    }
+}
