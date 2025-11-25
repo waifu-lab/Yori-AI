@@ -86,7 +86,18 @@ pub trait AppContext: Send + Sync {
 
 pub trait Plugin: Send + Sync + AsAny {
     fn metadata(&self) -> &PluginMetadata;
-    fn ui_schema(&self) -> crate::ui::UI;
+
+    /// Builds the UI for the plugin in an immediate-mode style.
+    ///
+    /// This function is called by the host application whenever the UI needs to be
+    /// rendered or updated. The plugin should return a `UiSchema` describing
+    /// its desired UI layout.
+    ///
+    /// The default implementation returns `None`, indicating that the plugin does
+    /// not have a UI.
+    fn ui(&self) -> Option<crate::ui::UiSchema> {
+        None
+    }
     
     fn is_deprecated(&self) -> bool;
     fn need_upgrade(&self) -> bool;
