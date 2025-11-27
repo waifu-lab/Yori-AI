@@ -1,0 +1,117 @@
+package waifu-lab:yori-ai;
+
+interface plugin-config {
+    record text-input-config {
+        placeholder: option<string>,
+        default-value: option<string>,
+        max-length: option<u32>,
+    }
+
+    record password-input-config {
+        placeholder: option<string>,
+        max-length: option<u32>,
+    }
+
+    record number-input-config {
+        default-value: option<f64>,
+        min: option<f64>,
+        max: option<f64>,
+    }
+
+    record slider-config {
+        min: f64,
+        max: f64,
+        step: f64,
+        default-value: f64,
+    }
+
+    record toggle-config {
+        label: string,
+        default-value: bool,
+    }
+
+    record option-item {
+        label: string,
+        value: string,
+    }
+
+    record dropdown-config {
+        options: list<option-item>,
+        default-value: option<string>,
+    }
+
+    record path-config {
+        extensions: list<string>,
+        default-value: option<string>,
+    }
+
+    variant config-type {
+        text-input(text-input-config),
+        text-area(text-input-config),
+        password-input(password-input-config),
+        number-input(number-input-config),
+        slider(slider-config),
+        toggle(toggle-config),
+        dropdown(dropdown-config),
+        path(path-config),
+    }
+
+    record config-item {
+        id: string,
+        label: string,
+        description: option<string>,
+        component-type: config-type,
+    }
+}
+
+interface context {
+    enum log-level {
+        debug,
+        info,
+        warn,
+        error,
+    }
+
+    record event-data {
+        name: string,
+        payload: string,
+    }
+
+    resource host {
+        on-event: func(event: event-data);
+
+        search-memory: func(query: string, limit: u32) -> list<string>;
+    }
+
+    log: func(level: log-level, message: string);
+    get-host: func() -> host;
+    get-env: func(key: string) -> string;
+}
+
+interface plugin {
+    use plugin-config.{config-item};
+
+    record info {
+        name: string,
+        prefix: string,
+        description: string,
+    }
+    
+    get-info: func() -> info;
+    get-config-schema: func() -> list<config-item>;
+    update-config: func(key: string, value: string) -> result<_, string>;
+    
+    on-load: func() -> result<_, string>;
+    on-shutdown: func() -> result<_, string>;
+    on-ai-command: func(command: string, args: list<string>) -> result<string, string>;
+}
+
+world context-impl {
+    export context;
+}
+
+world plugin-impl {
+    import context;
+    export plugin;
+}
+

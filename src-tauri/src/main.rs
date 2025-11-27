@@ -1,6 +1,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::Manager;
+// base modules
+mod core;
+mod command;
+
+// sub systems
+mod account;
+mod plugin;
+
+// utilities
+mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {

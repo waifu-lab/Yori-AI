@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "ai-vtuber-launcher",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "identifier": "com.lumina.dream-whisper.ai-vtuber-launcher",
   "build": {
     "frontendDist": "../src",
@@ -12,11 +12,18 @@
   "app": {
     "windows": [
       {
-        "title": "AI Vtuber Launcher",
+        "title": "Yori AI Dashboard",
         "width": 800,
         "height": 600,
         "resizable": true,
         "fullscreen": false
+      },
+      {
+        "decorations": false,
+        "fullscreen": true,
+        "resizable": false,
+        "transparent": true,
+        "alwaysOnTop": true
       }
     ],
     "security": {
