@@ -31,7 +31,7 @@ crossbeam-channel = "0.5.15"
 # logging dependencies
 log = "0.4.28"
 fern = { version = "0.7.1", features = ["colored"] }
-chrono = "0.4.42"
+chrono = { version = "0.4.42", features = ["serde"] }
 
 # utility dependencies
 anyhow = "1.0.100"
@@ -44,3 +44,7 @@ wasmtime = "39.0.1"
 # gpu dependencies
 wgpu = "27.0.1"
 live2d-cubism-core-sys = { git = "https://github.com/James2022-rgb/live2d-cubism-core-sys" }
+strfmt = "0.2.5"
+toml = "0.9.8"
+notify = "8.2.0"
+tokio = { version = "1.48.0", features = ["sync", "full"] }
