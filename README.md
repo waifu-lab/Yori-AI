@@ -1,179 +1,94 @@
-﻿# AI VTuber Launcher
+﻿# Yori AI (Project Name Tentative)
 
-基於 Tauri 的 AI VTuber 專案管理與啟動工具，採用可插拔架構設計。
+> **打造具備「長期記憶」與「跨場景一致性」的 AI 伴侶載體。** 
 
----
+Yori AI 不僅是一個聊天機器人，而是一個整合了渲染、記憶與多模態交互的 **OS 層級 AI 啟動器**。它旨在建立一個「單一存在 (One Entity)」的系統，無論是在桌面工作、直播互動或是 Discord 交流，使用者面對的都是同一個擁有連續記憶與統一視覺形象（Live2D/3D）的數位靈魂。
 
-## 專案架構
+## 🌟 核心特色 (Key Features)
 
-```
-前端 (SvelteKit + TypeScript)
-    
-後端 (Tauri + Rust)
-     ProjectManager (專案管理)
-     PluginManager (插件管理)
-     EventBus (事件通訊)
-    
-插件系統 (動態載入 .dll/.so/.dylib)
-```
+  * **單一後端，多重介面 (One Core, Multi-Interfaces)**
+      * **桌面寵物模式**：背景透明、可穿透滑鼠的 OS 上層視窗，用於日常陪伴。
+      * **直播助手模式**：透過 Spout2/NDI 輸出零延遲、無背景的共享紋理給 OBS，支援 VAD (語音活動偵測) 實現持續聆聽。
+      * **Discord 協作模式**：Headless 運行，連結伺服器並同步桌面狀態（如：閒置、睡覺）。
+  * **長期記憶系統 (Long-term Memory)**
+      * 使用 **ChromaDB** 作為本地向量資料庫，具備分區儲存（Desktop/Stream/Discord）與動態總結機制。
+  * **本地優先與隱私 (Local First)**
+      * 對話紀錄與記憶預設儲存於本機，絕不主動上傳雲端。
+  * **強大的渲染能力**
+      * 原生支援 **Live2D Cubism** (.model3.json) 與 **VRM/GLTF** 3D 模型。
+  * **Wasm 插件系統**
+      * 基於 **Wasmtime** 的沙盒環境，允許開發者撰寫 Rust/Wasm 插件來擴充 AI 功能。
 
-### 技術棧
+## 🛠️ 技術堆疊 (Tech Stack)
 
-- **前端**: SvelteKit + TypeScript + Tailwind CSS
-- **後端**: Rust + Tauri
-- **插件**: Rust 動態函式庫
-- **狀態管理**: parking_lot::RwLock
-- **序列化**: bincode
-- **國際化**: rust_i18n
+本專案採用 **Rust Native 優先** 的混合架構，強調圖形效能與資源隔離。
 
----
+| 層級 | 技術選型 | 用途 |
+| :--- | :--- | :--- |
+| **Frontend** | Svelte + TailwindCSS + TS | 使用者介面、儀表板、對話氣泡  |
+| **App Shell** | Tauri v2 | 視窗管理、系統托盤、IPC  |
+| **Core Logic** | **Rust** | 主程式邏輯、LLM 串接、物理運算  |
+| **Renderer** | **wgpu** (WebGPU Native) | 獨立於 WebView 的原生渲染環境 (Offscreen)  |
+| **Memory** | ChromaDB (Python Sidecar) | 向量資料庫服務，透過 PyInstaller 打包  |
+| **Sharing** | Spout2 (Windows API) | 直播零延遲紋理共享  |
+| **Plugins** | Wasmtime | 安全的第三方插件執行環境  |
 
-## 快速開始
+## 🏗️ 系統架構 (Architecture)
 
-### 環境需求
+### 資料流與渲染管線
 
-- Node.js 18+
-- pnpm 8+
-- Rust 1.70+
-- Tauri CLI
+系統嚴格禁止 UI (JS) 直接操作渲染資源。渲染採用 **Offscreen Rendering** 機制：
 
-### 安裝依賴
+1.  **Update Phase (Rust)**: 計算物理、Live2D 參數、VRM 骨架。
+2.  **Draw Phase (wgpu)**: 繪製到一張 **Shared Texture (RGBA8)**。
+3.  **Composite Phase**:
+      * **Desktop**: 繪製到 Tauri 視窗綁定的 Surface。
+      * **OBS**: 透過 Interop 寫入 Spout Sender。
 
-```bash
-# 安裝前端依賴
-pnpm install
+### 專案目錄結構 (Project Structure)
 
-# 安裝 Tauri CLI (如果尚未安裝)
-cargo install tauri-cli
-```
-
-### 開發
-
-```bash
-# 啟動開發伺服器 (前端 + 後端)
-pnpm dev
-
-# 僅前端開發
-pnpm run dev:fe
-
-# 僅後端開發
-cd src-tauri
-cargo run
-```
-
-### 建置
-
-```bash
-# 建置桌面應用程式
-pnpm tauri build
-
-# 或使用 cargo
-cargo build --release
+```text
+src-tauri/
+├── src/
+│   ├── commands/       # Tauri IPC (Layout, Project CRUD)
+│   ├── renderer/       # wgpu 核心 (Engine, Spout2, Texture)
+│   ├── models/         # Live2D & VRM 解析與處理
+│   ├── memory/         # ChromaDB Client & Sidecar 管理
+│   ├── plugin/         # Wasmtime Host & WIT Bindings
+│   ├── audio/          # TTS 引擎與裝置路由
+│   └── main.rs         # 程式入口
+├── wit/                # Wasm Interface Type 定義 (.wit)
+├── capabilities/       # Windows App Manifest
+└── tauri.conf.json     # Tauri 配置
 ```
 
----
 
-## 專案結構
 
-```
-AI-Vtuber-Launcher-Tauri/
- src/                    # 前端程式碼 (SvelteKit)
-    lib/
-       commands.ts    # Tauri 命令包裝器
-       stores/        # Svelte stores
-    routes/            # 頁面路由
- src-tauri/             # 後端程式碼 (Rust)
-    src/
-       commands/      # Tauri 命令處理器
-       domain/        # 領域模型
-       managers/      # 管理器 (Project, Plugin)
-       event/         # 事件總線
-       launcher/      # 啟動器實作
-       main.rs
-    locales/           # 國際化資源
- plugin_lib/            # 插件開發函式庫
-     src/
-        types/         # Plugin trait 定義
-     README.md          # 插件開發指南
-```
+## 🚀 開發路線圖 (Roadmap)
 
----
+  * **Phase 1: 基礎建設與渲染核心** 
+      * [ ] 建立 Tauri v2 + wgpu 專案骨架
+      * [ ] 實作 Windows 透明視窗與穿透邏輯
+      * [ ] 載入靜態 Live2D/VRM 模型
+  * **Phase 2: 核心邏輯與記憶體** 
+      * [ ] 整合 ChromaDB Sidecar
+      * [ ] 串接 LLM API (OpenAI/Anthropic)
+      * [ ] 實作 TTS 與 LipSync (唇形同步)
+  * **Phase 3: 互動與介面** 
+      * [ ] 完善 Dashboard UI (專案管理)
+      * [ ] 實作版面同步 (Layout Sync) 機制
+  * **Phase 4: 直播功能** 
+      * [ ] 實作 Spout2 紋理共享
+      * [ ] 整合 VAD 實現持續聆聽
+  * **Phase 5: 插件系統** 
+      * [ ] 整合 Wasmtime 與 WIT
+      * [ ] 實作權限管控 (plugin.toml)
 
-## 核心功能
+## 📦 需求環境 (Prerequisites)
 
-### 專案管理
--  建立、儲存、刪除 VTuber 專案
--  專案配置管理
--  三種控制模式: Desktop / Streaming / Discord
--  專案持久化 (.proj 檔案)
-
-### 插件系統
--  動態載入插件
--  插件生命週期管理
--  事件驅動通訊
--  型別安全的設定系統
-
-### 啟動器
--  Desktop 模式啟動器
--  Streaming 模式啟動器
--  Discord 模式啟動器
-
----
-
-## 開發插件
-
-查看 [插件開發指南](./plugin_lib/README.md) 了解如何建立自訂插件。
-
-### 快速範例
-
-```rust
-use plugin_lib::types::{Plugin, AppContext, PluginMetadata};
-use plugin_lib::declare_plugin;
-
-pub struct MyPlugin {
-    metadata: PluginMetadata,
-}
-
-impl Plugin for MyPlugin {
-    // 實作插件邏輯...
-}
-
-declare_plugin!(MyPlugin, MyPlugin::new);
-```
-
----
-
-## 開發指南
-
-### 程式碼品質
-
-```bash
-# 格式化與檢查 (前端)
-pnpm run lint:fix
-pnpm run check
-
-# Rust clippy 檢查
-cargo clippy --all-targets
-```
-
-### 重要約定
-
-- 前端**必須使用 pnpm**
-- 管理器必須在 `initialize()` 前呼叫 `set_handle()`
-- 使用 `parking_lot::RwLock` 而非 `std::sync::Mutex`
-- 專案使用 `bincode` 序列化，非 JSON
-- 事件名稱區分大小寫
-
----
-
-## 文檔
-
-- [開發指南](./.github/copilot-instructions.md) - 完整架構說明
-- [插件開發](./plugin_lib/README.md) - 插件 API 文檔
-- [TODO 清單](./TODO.md) - 開發任務
-
----
-
-## 授權
-
-待定
+  * **OS**: Windows 10 (1903+) / Windows 11 
+  * **Runtime**: WebView2 Runtime 
+  * **Dev Tools**:
+      * Rust (Latest Stable)
+      * Node.js (for Svelte/Tauri CLI)
+      * Python (for building ChromaDB Sidecar)

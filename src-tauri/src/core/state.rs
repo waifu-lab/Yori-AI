@@ -13,7 +13,7 @@ pub struct AppMemory {
 }
 
 impl AppConsts {
-    pub fn from_manager<R: tauri::Runtime>(manager: impl tauri::Manager<R>) -> Self {
+    pub fn new<R: tauri::Runtime>(manager: impl tauri::Manager<R>) -> Self {
         let resolver = manager.path();
         let app_root = resolver.app_data_dir().unwrap();
         Self { app_root }

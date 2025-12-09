@@ -2,7 +2,6 @@ use std::{fs, sync::{Arc, OnceLock}, thread};
 
 use notify::Watcher;
 use parking_lot::{Mutex, RwLock};
-use tauri::plugin;
 
 use super::state::AppConsts;
 use crate::{schema::{PluginConfig, Profile, ProjectMeta}, utils::path};
@@ -11,7 +10,7 @@ pub struct Project {
     meta: ProjectMeta,
     profile: Profile,
     plugins: RwLock<Vec<PluginConfig>>,
-    watcher: OnceLock<notify::RecommendedWatcher>,
+    watcher: Mutex<OnceLock<notify::RecommendedWatcher>>,
     watcher_thread: Mutex<OnceLock<thread::JoinHandle<()>>>,
     drop: OnceLock<()>,
 }
@@ -36,7 +35,7 @@ impl Project {
             meta,
             profile,
             plugins: RwLock::new(Vec::new()),
-            watcher: OnceLock::new(),
+            watcher: Mutex::new(OnceLock::new()),
             watcher_thread: Mutex::new(OnceLock::new()),
             drop: OnceLock::new(),
         })
@@ -62,13 +61,17 @@ impl Project {
         });
 
         watcher.watch(&project_dir, notify::RecursiveMode::Recursive)?;
-        self.watcher.set(watcher).unwrap();
+        self.watcher.lock().set(watcher).unwrap();
         self.watcher_thread.lock().set(watcher_thread).unwrap();
         Ok(())
     }
 
     pub fn destroy(&self) {
         if self.drop.set(()).is_ok() {
+            if let Some(mut watcher) = self.watcher.lock().take() {
+                watcher.unwatch(&self.meta.data_root).unwrap();
+            }
+
             if let Some(handle) = self.watcher_thread.lock().take() {
                 handle.join().unwrap();
             }

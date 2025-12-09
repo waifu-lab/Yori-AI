@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Yori AI Dashboard",
         "width": 800,
         "height": 600,
@@ -19,11 +20,13 @@
         "fullscreen": false
       },
       {
+        "label": "overlay",
         "decorations": false,
         "fullscreen": true,
         "resizable": false,
         "transparent": true,
-        "alwaysOnTop": true
+        "alwaysOnTop": true,
+        "url": "about:blank"
       }
     ],
     "security": {

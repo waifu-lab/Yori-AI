@@ -8,7 +8,7 @@ use crate::{
         project::create_project as create_project_fn,
         state::{AppConsts, AppMemory}
     },
-    schema::ProjectMeta,
+    schema::{ProjectMeta, ProjectMode},
     utils::path
 };
 
@@ -24,6 +24,7 @@ pub fn create_project(app: tauri::AppHandle, payload: ProjectCreatePayload) -> R
         version: payload.version,
         created_at: chrono::Utc::now(),
         data_root: payload.data_root.unwrap_or_else(|| path::project_default_path(app_root, &payload.name)),
+        mode: payload.mode,
     };
 
     let project = Arc::new(create_project_fn(consts.inner().clone(), project_meta.clone())
@@ -39,4 +40,5 @@ pub struct ProjectCreatePayload {
     description: String,
     version: String,
     data_root: Option<std::path::PathBuf>,
+    mode: ProjectMode,
 }
