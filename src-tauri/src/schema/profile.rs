@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -85,6 +87,25 @@ impl Default for Profile {
                 speaker: String::new(),
                 speed: 1.0,
                 pitch: 1.0,
+            },
+        }
+    }
+}
+
+use crate::core::renderer::frontend::{
+    Frontend,
+    Live2dFrontend,
+    VrmFrontend
+};
+
+impl ApperanceModelType {
+    pub fn create_frontend(&self, model_path: PathBuf) -> Box<dyn Frontend> {
+        match self {
+            ApperanceModelType::Live2D => {
+                Box::new(Live2dFrontend::new(model_path))
+            },
+            ApperanceModelType::VRM => {
+                Box::new(VrmFrontend::new(model_path))
             },
         }
     }

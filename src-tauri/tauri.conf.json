@@ -26,7 +26,8 @@
         "resizable": false,
         "transparent": true,
         "alwaysOnTop": true,
-        "url": "about:blank"
+        "url": "about:blank",
+        "visible": false
       }
     ],
     "security": {

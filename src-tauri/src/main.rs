@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use parking_lot::RwLock;
 use tauri::Manager;
 
 // base modules
@@ -31,9 +32,28 @@ fn main() {
             use core::renderer::backend::{RENDER_BACKEND, SHAERD_STATE, RenderBackend};
             let monitor = app.primary_monitor().unwrap().unwrap();
             RENDER_BACKEND.set(Arc::new(pollster::block_on(RenderBackend::new()).unwrap())).ok();
-            SHAERD_STATE.set(Arc::new(RENDER_BACKEND.wait().clone().d2_state(*monitor.size()))).ok();
+            SHAERD_STATE.set(RwLock::new(RENDER_BACKEND.wait().clone().d2_state(*monitor.size()))).ok();
 
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if window.label() != "overlay" {
+                return;
+            }
+
+            match event {
+                tauri::WindowEvent::Resized(size) |
+                tauri::WindowEvent::ScaleFactorChanged { new_inner_size: size, .. } => {
+                    use core::renderer::backend::{state_read, state_write};
+                    if *size == state_read().size() {
+                        return;
+                    }
+
+                    let mut state = state_write();
+                    *state = state.resize(*size);
+                },
+                _ => ()
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

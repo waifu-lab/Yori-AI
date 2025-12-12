@@ -12,6 +12,15 @@ use crate::{
     utils::path
 };
 
+#[derive(Deserialize)]
+pub struct ProjectCreatePayload {
+    name: String,
+    description: String,
+    version: String,
+    data_root: Option<std::path::PathBuf>,
+    mode: ProjectMode,
+}
+
 #[tauri::command]
 pub fn create_project(app: tauri::AppHandle, payload: ProjectCreatePayload) -> Result<ProjectMeta, String> {
     let consts = app.state::<Arc<AppConsts>>();
@@ -32,13 +41,4 @@ pub fn create_project(app: tauri::AppHandle, payload: ProjectCreatePayload) -> R
     project.clone().initialize().map_err(|e| e.to_string())?;
     memory.add_project(project);
     Ok(project_meta)
-}
-
-#[derive(Deserialize)]
-pub struct ProjectCreatePayload {
-    name: String,
-    description: String,
-    version: String,
-    data_root: Option<std::path::PathBuf>,
-    mode: ProjectMode,
 }
