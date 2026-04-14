@@ -2,9 +2,7 @@
 name = "Yori-AI"
 version = "0.1.0"
 description = "A Launcher for personal AI with Yori AI"
-authors = [
-    "lumina-ai-1104"
-]
+authors = ["lumina-ai-1104"]
 license = ""
 repository = "https://github.com/waifu-lab/Yori-AI"
 edition = "2024"
@@ -13,9 +11,13 @@ rust-version = "1.91.0"
 [build-dependencies]
 tauri-build = { version = "2.5.3", features = [] }
 
+[features]
+default = []
+live2d = ["dep:live2d-cubism-core-sys"]
+
 [dependencies]
 # tauri dependencies
-tauri = { version = "2.9.4", features = [] }
+tauri = { version = "2.9.4", features = ["tray-icon"] }
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 
@@ -48,6 +50,6 @@ wasmtime = "39.0.1"
 
 # gpu dependencies
 wgpu = "27.0.1"
-live2d-cubism-core-sys = { git = "https://github.com/James2022-rgb/live2d-cubism-core-sys" }
+live2d-cubism-core-sys = { git = "https://github.com/James2022-rgb/live2d-cubism-core-sys", optional = true }
 dpi = "0.1.2"
 pollster = "0.4.0"

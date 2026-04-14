@@ -1,3 +1,5 @@
+#![cfg(feature = "live2d")]
+
 #[test]
 fn test_load() {
     use live2d_cubism_core_sys::core as live2d;

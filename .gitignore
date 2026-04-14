@@ -27,3 +27,4 @@ vite.config.ts.timestamp-*
 
 # Live2D
 /src-tauri/libs/Live2D/
+/ldocs
