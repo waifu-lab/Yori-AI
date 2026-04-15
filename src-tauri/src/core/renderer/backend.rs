@@ -116,6 +116,10 @@ impl RenderState {
         self.target.create_view(&wgpu::TextureViewDescriptor::default())
     }
 
+    pub fn target_format(&self) -> wgpu::TextureFormat {
+        self.target.format()
+    }
+
     pub fn size(&self) -> dpi::PhysicalSize<u32> {
         self.size
     }

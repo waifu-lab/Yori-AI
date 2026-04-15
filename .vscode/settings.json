@@ -1,9 +1,8 @@
 {
     "terminal.integrated.env.windows": {
-        "LIVE2D_CUBISM_SDK_NATIVE_DIR": "C:\\Users\\RexWu\\workspace\\Rust\\AI-Vtuber-Launcher-Tauri\\src-tauri\\libs\\Live2D"
+        "LIVE2D_CUBISM_SDK_NATIVE_DIR": "C:\\pathfiles\\CubismSdkForNative-5-r.5"
     },
     "rust-analyzer.server.extraEnv": {
-        
-        "LIVE2D_CUBISM_SDK_NATIVE_DIR": "C:\\Users\\RexWu\\workspace\\Rust\\AI-Vtuber-Launcher-Tauri\\src-tauri\\libs\\Live2D"
+        "LIVE2D_CUBISM_SDK_NATIVE_DIR": "C:\\pathfiles\\CubismSdkForNative-5-r.5"
     }
 }
