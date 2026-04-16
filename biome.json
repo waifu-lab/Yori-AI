@@ -7,9 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": [
-			"src/**"
-		]
+		"includes": ["src/**"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -41,9 +39,7 @@
 	},
 	"overrides": [
 		{
-			"includes": [
-				"**/*.svelte"
-			],
+			"includes": ["**/*.svelte"],
 			"linter": {
 				"rules": {
 					"correctness": {
@@ -58,9 +54,7 @@
 			}
 		},
 		{
-			"includes": [
-				"*.svelte"
-			]
+			"includes": ["*.svelte"]
 		}
 	],
 	"assist": {

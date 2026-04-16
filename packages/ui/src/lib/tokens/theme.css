@@ -1,0 +1,23 @@
+/* ============================================================
+   Editorial Noir — Dark mode overrides
+   Light mode base values live in app.css @theme.
+   ============================================================ */
+
+[data-theme='dark'] {
+	--color-canvas: #000000;
+	--color-surface: #0e0e0e;
+	--color-elevated: #1a1a1a;
+
+	--color-foreground: #ffffff;
+	--color-muted-foreground: rgba(255, 255, 255, 0.55);
+	--color-faint: rgba(255, 255, 255, 0.28);
+
+	--color-primary-bloom: color-mix(in srgb, #2b2ed4 8%, transparent);
+
+	--color-border: rgba(255, 255, 255, 0.14);
+	--color-border-hover: rgba(255, 255, 255, 0.35);
+
+	--shadow-float: 0px 24px 48px rgba(0, 0, 0, 0.5);
+	--shadow-mini: 0px 1px 0px 1px rgba(0, 0, 0, 0.3);
+	--shadow-mini-inset: 0px 1px 0px 0px rgba(0, 0, 0, 0.5) inset;
+}

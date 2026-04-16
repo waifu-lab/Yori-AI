@@ -1,9 +1,9 @@
 ﻿# Yori AI (Project Name Tentative)
 
-
 ## 核心特色
-  * **強大的渲染能力**
-      * 原生支援 **Live2D Cubism** (.model3.json) 與 **VRM/GLTF** 3D 模型。
+
+- **強大的渲染能力**
+  - 原生支援 **Live2D Cubism** (.model3.json) 與 **VRM/GLTF** 3D 模型。
 
 ## 技術堆疊
 
@@ -26,8 +26,8 @@
 1.  **Update Phase (Rust)**: 計算物理、Live2D 參數、VRM 骨架。
 2.  **Draw Phase (wgpu)**: 繪製到一張 **Shared Texture (RGBA8)**。
 3.  **Composite Phase**:
-      * **Desktop**: 繪製到 Tauri 視窗綁定的 Surface。
-      * **OBS**: 透過 Interop 寫入 Spout Sender。
+    - **Desktop**: 繪製到 Tauri 視窗綁定的 Surface。
+    - **OBS**: 透過 Interop 寫入 Spout Sender。
 
 ### 專案目錄結構
 
@@ -44,9 +44,9 @@ src-tauri/
 └── tauri.conf.json     # Tauri 配置
 ```
 
-
 Spout2 為輸出obs用
 
 ### 語音辨識
+
 Voice Activity Detection 前端處理
 將語音資料傳給後端處理

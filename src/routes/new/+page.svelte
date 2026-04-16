@@ -1,71 +1,93 @@
 ﻿<script lang="ts">
-    let name = $state('');
-    let description = $state('');
-    let template = $state('vtuber');
+	let name = $state('');
+	let description = $state('');
+	let template = $state('vtuber');
 </script>
 
-<div class="max-w-2xl mx-auto py-8">
-    <header class="mb-8 text-center">
-        <h1 class="text-3xl font-bold text-white mb-2 tracking-tight">Create New Persona</h1>
-        <p class="text-slate-400">Start a new AI companion project from a template.</p>
-    </header>
+<div class="mx-auto max-w-2xl py-8">
+	<header class="mb-8 text-center">
+		<h1 class="mb-2 text-3xl font-bold tracking-tight text-white">Create New Persona</h1>
+		<p class="text-slate-400">Start a new AI companion project from a template.</p>
+	</header>
 
-    <div class="bg-slate-900 rounded-xl p-8 border border-slate-800 shadow-xl ring-1 ring-white/5">
-        <div class="space-y-6">
-            <!-- Name -->
-            <div>
-                <label class="block text-sm font-medium text-slate-400 mb-2">
-                    Persona Name
-                    <input type="text" bind:value={name} placeholder="e.g. Yori" class="w-full mt-2 bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all">
-                </label>
-            </div>
+	<div class="rounded-xl border border-slate-800 bg-slate-900 p-8 shadow-xl ring-1 ring-white/5">
+		<div class="space-y-6">
+			<!-- Name -->
+			<div>
+				<label class="mb-2 block text-sm font-medium text-slate-400">
+					Persona Name
+					<input
+						type="text"
+						bind:value={name}
+						placeholder="e.g. Yori"
+						class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 transition-all outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+					/>
+				</label>
+			</div>
 
-            <!-- Description -->
-            <div>
-                <label class="block text-sm font-medium text-slate-400 mb-2">
-                    Description
-                    <textarea bind:value={description} placeholder="A brief description of this persona..." class="w-full mt-2 bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all min-h-[100px] resize-none"></textarea>
-                </label>
-            </div>
+			<!-- Description -->
+			<div>
+				<label class="mb-2 block text-sm font-medium text-slate-400">
+					Description
+					<textarea
+						bind:value={description}
+						placeholder="A brief description of this persona..."
+						class="mt-2 min-h-[100px] w-full resize-none rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 transition-all outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+					></textarea>
+				</label>
+			</div>
 
-            <!-- Template Selection -->
-            <div>
-                <span class="block text-sm font-medium text-slate-400 mb-3">Starting Template</span>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button 
-                        class="p-4 rounded-xl border text-left transition-all {template === 'vtuber' ? 'bg-indigo-500/10 border-indigo-500 ring-1 ring-indigo-500/50' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}"
-                        onclick={() => template = 'vtuber'}
-                    >
-                        <span class="icon-[material-symbols--face] w-6 h-6 text-indigo-400 mb-2 block"></span>
-                        <div class="font-medium text-white text-sm">VTuber</div>
-                        <div class="text-xs text-slate-500 mt-1">Live2D + Voice</div>
-                    </button>
+			<!-- Template Selection -->
+			<div>
+				<span class="mb-3 block text-sm font-medium text-slate-400">Starting Template</span>
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+					<button
+						class="rounded-xl border p-4 text-left transition-all {template === 'vtuber'
+							? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/50'
+							: 'border-slate-800 bg-slate-950 hover:border-slate-600'}"
+						onclick={() => (template = 'vtuber')}
+					>
+						<span class="icon-[material-symbols--face] mb-2 block h-6 w-6 text-indigo-400"></span>
+						<div class="text-sm font-medium text-white">VTuber</div>
+						<div class="mt-1 text-xs text-slate-500">Live2D + Voice</div>
+					</button>
 
-                    <button 
-                        class="p-4 rounded-xl border text-left transition-all {template === 'assistant' ? 'bg-indigo-500/10 border-indigo-500 ring-1 ring-indigo-500/50' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}"
-                        onclick={() => template = 'assistant'}
-                    >
-                        <span class="icon-[material-symbols--terminal] w-6 h-6 text-emerald-400 mb-2 block"></span>
-                        <div class="font-medium text-white text-sm">Assistant</div>
-                        <div class="text-xs text-slate-500 mt-1">Code & Logic</div>
-                    </button>
+					<button
+						class="rounded-xl border p-4 text-left transition-all {template === 'assistant'
+							? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/50'
+							: 'border-slate-800 bg-slate-950 hover:border-slate-600'}"
+						onclick={() => (template = 'assistant')}
+					>
+						<span class="icon-[material-symbols--terminal] mb-2 block h-6 w-6 text-emerald-400"></span>
+						<div class="text-sm font-medium text-white">Assistant</div>
+						<div class="mt-1 text-xs text-slate-500">Code & Logic</div>
+					</button>
 
-                    <button 
-                        class="p-4 rounded-xl border text-left transition-all {template === 'chatbot' ? 'bg-indigo-500/10 border-indigo-500 ring-1 ring-indigo-500/50' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}"
-                        onclick={() => template = 'chatbot'}
-                    >
-                        <span class="icon-[material-symbols--chat] w-6 h-6 text-rose-400 mb-2 block"></span>
-                        <div class="font-medium text-white text-sm">Chatbot</div>
-                        <div class="text-xs text-slate-500 mt-1">Text Only</div>
-                    </button>
-                </div>
-            </div>
+					<button
+						class="rounded-xl border p-4 text-left transition-all {template === 'chatbot'
+							? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/50'
+							: 'border-slate-800 bg-slate-950 hover:border-slate-600'}"
+						onclick={() => (template = 'chatbot')}
+					>
+						<span class="icon-[material-symbols--chat] mb-2 block h-6 w-6 text-rose-400"></span>
+						<div class="text-sm font-medium text-white">Chatbot</div>
+						<div class="mt-1 text-xs text-slate-500">Text Only</div>
+					</button>
+				</div>
+			</div>
 
-            <!-- Actions -->
-            <div class="flex items-center gap-4 pt-6 mt-6 border-t border-slate-800">
-                <a href="/project" class="flex-1 py-3 rounded-full font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-center">Cancel</a>
-                <button class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-full font-medium transition-all shadow-lg shadow-indigo-500/20">Create Persona</button>
-            </div>
-        </div>
-    </div>
+			<!-- Actions -->
+			<div class="mt-6 flex items-center gap-4 border-t border-slate-800 pt-6">
+				<a
+					href="/project"
+					class="flex-1 rounded-full py-3 text-center font-medium text-slate-400 transition-all hover:bg-slate-800 hover:text-white"
+					>Cancel</a
+				>
+				<button
+					class="flex-1 rounded-full bg-indigo-600 py-3 font-medium text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-500"
+					>Create Persona</button
+				>
+			</div>
+		</div>
+	</div>
 </div>
