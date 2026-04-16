@@ -3,7 +3,7 @@
 	"compilerOptions": {
 		"moduleResolution": "bundler",
 		"module": "esnext",
-		"types": [],
+		"types": ["node"],
 		"allowArbitraryExtensions": true
 	},
 	"include": ["./**/*.ts", "../src/**/*.ts", "../src/**/*.svelte"]

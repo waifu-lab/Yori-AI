@@ -42,7 +42,7 @@
       cursor-pointer
       items-center justify-center
       rounded-sm border
-      transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95
+      transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none
       disabled:pointer-events-none disabled:opacity-40"
 	>
 		{#snippet children({ checked, indeterminate })}

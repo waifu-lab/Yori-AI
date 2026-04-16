@@ -44,35 +44,51 @@
         backdrop-blur-[20px] outline-none"
 		>
 			{#each groups as group, i (i)}
-				<DropdownMenu.Group>
-					{#if group.label}
+				{#if group.label}
+					<DropdownMenu.Group>
 						<DropdownMenu.GroupHeading
 							class="text-faint px-3 py-1.5 font-[Inter] text-xs font-semibold tracking-widest uppercase"
 						>
 							{group.label}
 						</DropdownMenu.GroupHeading>
-					{/if}
-
+						{#each group.items as item (item.label)}
+							<DropdownMenu.Item
+								disabled={item.disabled}
+								onclick={item.onclick}
+								class="duration-fast flex cursor-pointer items-center rounded-sm px-3 py-2
+                  text-sm transition-colors outline-none
+                  {item.variant === 'danger'
+									? 'text-danger hover:bg-danger-surface data-[highlighted]:bg-danger-surface'
+									: 'text-muted-foreground hover:bg-elevated hover:text-secondary data-[highlighted]:bg-elevated data-[highlighted]:text-secondary'}
+                  data-[disabled]:pointer-events-none data-[disabled]:opacity-40"
+							>
+								{#if item.icon}<span class="{item.icon} mr-2.5 h-4 w-4 shrink-0"></span>{/if}
+								<span class="flex-1">{item.label}</span>
+								{#if item.shortcut}<span class="text-faint ml-4 text-xs">{item.shortcut}</span>{/if}
+							</DropdownMenu.Item>
+						{/each}
+					</DropdownMenu.Group>
+				{:else}
 					{#each group.items as item (item.label)}
 						<DropdownMenu.Item
 							disabled={item.disabled}
 							onclick={item.onclick}
-							class="duration-fast flex cursor-pointer items-center gap-2.5 rounded-sm px-3 py-2
+							class="duration-fast flex cursor-pointer items-center rounded-sm px-3 py-2
                 text-sm transition-colors outline-none
                 {item.variant === 'danger'
 								? 'text-danger hover:bg-danger-surface data-[highlighted]:bg-danger-surface'
 								: 'text-muted-foreground hover:bg-elevated hover:text-secondary data-[highlighted]:bg-elevated data-[highlighted]:text-secondary'}
                 data-[disabled]:pointer-events-none data-[disabled]:opacity-40"
 						>
-							{#if item.icon}<span class="{item.icon} h-4 w-4 shrink-0"></span>{/if}
+							{#if item.icon}<span class="{item.icon} mr-2.5 h-4 w-4 shrink-0"></span>{/if}
 							<span class="flex-1">{item.label}</span>
-							{#if item.shortcut}<span class="text-faint text-xs">{item.shortcut}</span>{/if}
+							{#if item.shortcut}<span class="text-faint ml-4 text-xs">{item.shortcut}</span>{/if}
 						</DropdownMenu.Item>
 					{/each}
-				</DropdownMenu.Group>
+				{/if}
 
 				{#if i < groups.length - 1}
-					<div class="my-1.5"></div>
+					<div class="my-1 h-px bg-elevated mx-1"></div>
 				{/if}
 			{/each}
 		</DropdownMenu.Content>

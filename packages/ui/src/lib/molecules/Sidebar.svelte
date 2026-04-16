@@ -50,12 +50,6 @@
 							? 'bg-elevated text-foreground'
 							: 'text-muted-foreground hover:bg-elevated hover:text-foreground'}"
 					>
-						<span
-							class="bg-primary duration-fast absolute left-0 h-5 w-0.5 rounded-full transition-opacity"
-							class:opacity-100={isActive(item.href)}
-							class:opacity-0={!isActive(item.href)}
-						></span>
-
 						<span class="{item.icon} h-5 w-5 shrink-0"></span>
 						<span class="flex-1 text-left">{item.label}</span>
 
@@ -97,18 +91,12 @@
 				{:else}
 					<a
 						href={item.href}
-						class="duration-fast relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm
+						class="duration-fast flex items-center gap-3 rounded-md px-3 py-2.5 text-sm
               font-medium transition-colors
               {isActive(item.href)
 							? 'bg-elevated text-foreground'
 							: 'text-muted-foreground hover:bg-elevated hover:text-foreground'}"
 					>
-						<span
-							class="bg-primary duration-fast absolute left-0 h-5 w-0.5 rounded-r-full transition-opacity"
-							class:opacity-100={isActive(item.href)}
-							class:opacity-0={!isActive(item.href)}
-						></span>
-
 						<span class="{item.icon} h-5 w-5 shrink-0"></span>
 						{item.label}
 					</a>
