@@ -72,7 +72,7 @@
 						RW
 					</div>
 					<div class="min-w-0 flex-1">
-						<p class="text-foreground truncate text-sm font-semibold">Rex Wu</p>
+						<p class="text-foreground truncate text-sm font-semibold">name</p>
 						<p class="text-muted-foreground truncate text-xs">Pro Plan</p>
 					</div>
 				</div>

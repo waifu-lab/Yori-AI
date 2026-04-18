@@ -29,3 +29,5 @@ vite.config.ts.timestamp-*
 /src-tauri/libs/Live2D/
 /ldocs
 /assets
+*live2dcubismcore.min.js
+*live2d.min.js

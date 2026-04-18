@@ -40,9 +40,9 @@
 		{#each thumbs as thumb (thumb)}
 			<Slider.Thumb
 				index={thumb}
-				class="bg-primary shadow-mini ring-offset-canvas duration-fast focus-visible:ring-ring block
+				class="bg-primary ring-offset-canvas  focus-visible:ring-ring block
           h-4 w-4 rounded-full
-          transition-all hover:scale-110 focus-visible:ring-2 focus-visible:ring-offset-2
+          hover:scale-110 focus-visible:ring-2 focus-visible:ring-offset-2
           focus-visible:outline-none active:scale-95
           disabled:pointer-events-none disabled:opacity-40"
 			/>

@@ -1,3 +1,1 @@
-mod project;
-
-pub use project::*;
+pub mod live2d_window;

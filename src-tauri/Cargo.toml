@@ -11,19 +11,16 @@ rust-version = "1.91.0"
 [build-dependencies]
 tauri-build = { version = "2.5.3", features = [] }
 
-[features]
-default = []
-live2d = ["dep:live2d-wgpu-renderer"]
-
 [dependencies]
 # tauri dependencies
-tauri = { version = "2.9.4", features = ["tray-icon"] }
+tauri = { version = "2.9.4", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 
 # serialization dependencies
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
+percent-encoding = "2"
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
 toml = "0.9.8"
 bitflags = { version = "2.10.0", features = ["serde"] }
@@ -31,12 +28,14 @@ bitflags = { version = "2.10.0", features = ["serde"] }
 # multithreading dependencies
 parking_lot = { version = "0.12.5", features = ["deadlock_detection"] }
 crossbeam-channel = "0.5.15"
-# tokio = { version = "1.48.0", features = ["sync", "full"] }
 
 # logging dependencies
 log = "0.4.28"
 fern = { version = "0.7.1", features = ["colored"] }
 chrono = { version = "0.4.42", features = ["serde"] }
+
+# http file server dependencies
+actix-web = "4"
 
 # utility dependencies
 anyhow = "1.0.100"
@@ -44,12 +43,7 @@ thiserror = "2.0.17"
 notify = "8.2.0"
 strfmt = "0.2.5"
 
+
 # sandbox dependencies
 wit-bindgen = "0.48.1"
 wasmtime = "39.0.1"
-
-# gpu dependencies
-wgpu = "27.0.1"
-live2d-wgpu-renderer = { path = "../live2d-wgpu-renderer", optional = true }
-dpi = "0.1.2"
-pollster = "0.4.0"

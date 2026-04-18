@@ -28,7 +28,7 @@
 	<div class="flex max-w-sm flex-col gap-4 p-6">
 		<Field label="Display Name" hint="This is shown in conversations">
 			{#snippet children()}
-				<Input placeholder="e.g. Rex Wu" />
+				<Input placeholder="e.g. name" />
 			{/snippet}
 		</Field>
 	</div>

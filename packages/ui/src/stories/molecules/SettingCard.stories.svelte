@@ -82,7 +82,7 @@
 		<SettingCard
 			title="Reset to Defaults"
 			description="Resets all settings to their factory defaults."
-			icon="icon-[material-symbols--restore]"
+			icon="icon-[material-symbols--settings-backup-restore]"
 			variant="danger"
 		>
 			{#snippet control()}

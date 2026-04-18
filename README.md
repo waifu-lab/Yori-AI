@@ -50,3 +50,6 @@ Spout2 為輸出obs用
 
 Voice Activity Detection 前端處理
 將語音資料傳給後端處理
+
+
+### 自行下載live2dcubismcore.min.js

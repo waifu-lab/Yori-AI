@@ -20,18 +20,36 @@
         "fullscreen": false
       },
       {
-        "label": "overlay",
-        "decorations": false,
-        "fullscreen": true,
-        "resizable": false,
+        "label": "live2d-preview",
+        "title": "Live2D",
+        "width": 800,
+        "height": 600,
+        "resizable": true,
         "transparent": true,
+        "decorations": false,
+        "shadow": false,
         "alwaysOnTop": true,
-        "url": "about:blank",
+        "url": "live2d",
         "visible": false
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:*; img-src 'self' asset: http://asset.localhost blob: data: http://asset.localhost http://127.0.0.1:* http://localhost:*; media-src 'self' blob: data: http://127.0.0.1:* http://localhost:*; font-src 'self' data:;",
+      "assetProtocol": {
+        "enable": true,
+        "scope": {
+          "allow": [
+            "$HOME/**",
+            "C:/**",
+            "D:/**",
+            "E:/**"
+          ],
+          "deny": []
+        }
+      },
+      "headers": {
+        "Cross-Origin-Opener-Policy": "unsafe-none"
+      }
     }
   },
   "bundle": {

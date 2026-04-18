@@ -47,19 +47,9 @@
 	>
 		{#snippet children({ checked, indeterminate })}
 			{#if indeterminate}
-				<svg width="10" height="2" viewBox="0 0 10 2" fill="none" class="text-white">
-					<rect width="10" height="2" rx="1" fill="currentColor" />
-				</svg>
+				<span class="icon-[material-symbols--check-indeterminate-small-rounded] text-white"></span>
 			{:else if checked}
-				<svg width="11" height="9" viewBox="0 0 11 9" fill="none" class="text-white">
-					<path
-						d="M1 4.5L4 7.5L10 1"
-						stroke="currentColor"
-						stroke-width="1.75"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
+				<span class="icon-[material-symbols--check-rounded] text-white"></span>
 			{/if}
 		{/snippet}
 	</Checkbox.Root>

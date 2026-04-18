@@ -19,7 +19,7 @@ The color strategy is binary, punctuated by a singular intellectual blue and a d
 | Role                   | Light Mode | Dark Mode | Token                    |
 | :--------------------- | :--------- | :-------- | :----------------------- |
 | **Background**         | `#ffffff`  | `#000000` | `surface`                |
-| **Surface (Low)**      | `#f5f5f5`  | `#0e0e0e` | `surface-container-low`  |
+| **Surface (Low)**      | `#F7F7F7`  | `#0e0e0e` | `surface-container-low`  |
 | **Surface (High)**     | `#ebebeb`  | `#111111` | `surface-container-high` |
 | **Primary Accent**     | `#2b2ed4`  | `#2b2ed4` | `primary`                |
 | **Interaction**        | `#cf2d56`  | `#cf2d56` | `secondary`              |

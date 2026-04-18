@@ -25,7 +25,7 @@
 				icon="icon-[material-symbols--badge]"
 			>
 				{#snippet children()}
-					<Input value="Rex Wu" placeholder="Your name" />
+					<Input value="name" placeholder="Your name" />
 				{/snippet}
 			</SettingCard>
 
