@@ -200,6 +200,31 @@ pub struct ReadFileResult {
     pub err: String,
 }
 
+/// Parses the currently loaded model3.json and returns expression names.
+#[tauri::command]
+pub fn list_expressions(app: AppHandle) -> Result<Vec<String>, String> {
+    let server = app.state::<Live2DServer>();
+    let guard = server.model_dir.read();
+    let base = guard.as_ref().ok_or("model not loaded")?;
+
+    // Find *.model3.json inside base
+    let model_file = find_model_file(base).ok_or("no model3.json found")?;
+    let data = fs::read_to_string(&model_file).map_err(|e| e.to_string())?;
+    let json: serde_json::Value = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+
+    let expressions = json
+        .pointer("/FileReferences/Expressions")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|e| e.get("Name").and_then(|n| n.as_str()).map(str::to_owned))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    Ok(expressions)
+}
+
 #[tauri::command]
 pub fn read_file(file_path: PathBuf) -> ReadFileResult {
     match fs::read(&file_path) {

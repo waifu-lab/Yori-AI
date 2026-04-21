@@ -29,3 +29,25 @@ export async function readFile(filePath: string): Promise<Uint8Array> {
 
 	return Uint8Array.from(result.data);
 }
+
+export type NodeStatus = 'running' | 'stopped';
+
+export function agentInstall(): Promise<void> {
+	return invoke('waifu_node_install');
+}
+
+export function agentStart(): Promise<void> {
+	return invoke('waifu_node_start');
+}
+
+export function agentStop(): Promise<void> {
+	return invoke('waifu_node_stop');
+}
+
+export function agentStatus(): Promise<NodeStatus> {
+	return invoke('waifu_node_status');
+}
+
+export function agentIsInstalled(): Promise<boolean> {
+	return invoke('waifu_node_is_installed');
+}

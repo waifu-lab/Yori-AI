@@ -37,6 +37,18 @@ chrono = { version = "0.4.42", features = ["serde"] }
 # http file server dependencies
 actix-web = "4"
 
+# async runtime + websocket
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = { version = "0.26", features = ["native-tls"] }
+futures-util = "0.3"
+
+# audio playback
+rodio = "0.20"
+base64 = "0.22"
+
+# http client (GitHub release download)
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
 # utility dependencies
 anyhow = "1.0.100"
 thiserror = "2.0.17"
