@@ -179,6 +179,25 @@ pub fn get_current_model_url(app: AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
+pub fn open_settings_window(app: AppHandle) -> Result<(), String> {
+    use tauri::WebviewUrl;
+    match app.get_webview_window("settings") {
+        Some(win) => {
+            win.show().map_err(|e| e.to_string())?;
+            win.set_focus().map_err(|e| e.to_string())
+        }
+        None => {
+            tauri::WebviewWindowBuilder::new(&app, "settings", WebviewUrl::App("settings".into()))
+                .title("設定")
+                .inner_size(860.0, 600.0)
+                .build()
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+    }
+}
+
+#[tauri::command]
 pub fn open_live2d_window(app: AppHandle) -> Result<(), String> {
     let win = app
         .get_webview_window("live2d-preview")

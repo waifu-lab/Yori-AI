@@ -24,6 +24,7 @@ fn main() {
         .manage(audio_player)
         .invoke_handler(tauri::generate_handler![
             // live2d
+            command::live2d_window::open_settings_window,
             command::live2d_window::open_live2d_window,
             command::live2d_window::close_live2d_window,
             command::live2d_window::read_file,

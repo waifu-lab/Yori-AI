@@ -57,7 +57,7 @@
       {
         "label": "live2d-preview",
         "title": "Live2D",
-        "width": 800,
+        "width": 400,
         "height": 600,
         "resizable": true,
         "transparent": true,

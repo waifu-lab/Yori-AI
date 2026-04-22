@@ -8,6 +8,8 @@ let Live2DModel_: typeof Live2DModelType;
 
 let app: Application | null = null;
 let currentModel: Live2DModelType | null = null;
+let modelNaturalWidth = 0;
+let modelNaturalHeight = 0;
 let initialized = false;
 
 /** Whether the loaded model has a formal LipSync parameter group. */
@@ -47,8 +49,18 @@ export async function initApp(container: HTMLElement): Promise<Application> {
 		resolution: window.devicePixelRatio || 1
 	});
 
+	// Reposition model whenever the window/canvas is resized
+	window.addEventListener('resize', repositionModel);
+
 	container.appendChild(app.canvas);
 	return app;
+}
+
+function repositionModel() {
+	if (!app || !currentModel || modelNaturalWidth === 0 || modelNaturalHeight === 0) return;
+	const scale = Math.min((app.screen.width / modelNaturalWidth) * 0.8, (app.screen.height / modelNaturalHeight) * 0.8);
+	currentModel.scale.set(scale);
+	currentModel.position.set(app.screen.width / 2, app.screen.height / 2);
 }
 
 /**
@@ -59,18 +71,19 @@ export async function loadModelFromUrl(url: string): Promise<void> {
 	if (!app) throw new Error('PixiJS app not initialised');
 
 	if (currentModel) {
-		app.stage.removeChild(currentModel as any);
-		currentModel.destroy();
+		app.stage.removeChild(currentModel as Parameters<typeof app.stage.removeChild>[0]);
 		currentModel = null;
 	}
 
 	const model = await Live2DModel_.from(url, {
-		autoInteract: false,
-		autoFocus: false,
+		autoHitTest: false,
+		autoFocus: false
 	} as Parameters<typeof Live2DModel_.from>[1]);
 
 	model.anchor.set(0.5);
-	const scale = Math.min((app.screen.width / model.width) * 0.8, (app.screen.height / model.height) * 0.8);
+	modelNaturalWidth = model.width;
+	modelNaturalHeight = model.height;
+	const scale = Math.min((app.screen.width / modelNaturalWidth) * 0.9, (app.screen.height / modelNaturalHeight) * 0.9);
 	model.scale.set(scale);
 	model.position.set(app.screen.width / 2, app.screen.height / 2);
 
@@ -80,19 +93,13 @@ export async function loadModelFromUrl(url: string): Promise<void> {
 	// Detect whether the model has formal LipSync parameter ids.
 	// CubismMotionManager.lipSyncIds is populated from the model3.json Groups[].Ids
 	// when the group Name is 'LipSync'.
-	const internalModel = (model as any).internalModel;
-	console.debug('[live2d] internalModel:', internalModel);
-	console.debug('[live2d] settings:', internalModel?.settings);
-	console.debug('[live2d] settings.Groups:', internalModel?.settings?.Groups);
-	console.debug('[live2d] motionManager:', internalModel?.motionManager);
-	console.debug('[live2d] lipSyncIds:', internalModel?.motionManager?.lipSyncIds);
-	const lipSyncIds: string[] = internalModel?.motionManager?.lipSyncIds ?? [];
+	const lipSyncIds: string[] =
+		(model as Live2DModelType & { internalModel: { motionManager: { lipSyncIds: string[] } } }).internalModel
+			?.motionManager?.lipSyncIds ?? [];
 	hasNativeLipSync = lipSyncIds.length > 0;
 
 	// Notify Rust backend: if no native LipSync, backend should compute viseme data.
-	setLipsyncMode(!hasNativeLipSync).catch((e) =>
-		console.warn('[live2d] setLipsyncMode failed:', e)
-	);
+	setLipsyncMode(!hasNativeLipSync).catch((e) => console.warn('[live2d] setLipsyncMode failed:', e));
 }
 
 /** Returns true when the loaded model has no native LipSync and requires backend visemes. */
@@ -188,12 +195,10 @@ function cancelLipsync(): void {
 }
 
 export function destroyApp(): void {
+	window.removeEventListener('resize', repositionModel);
 	cancelLipsync();
 	stopAudio();
-	if (currentModel) {
-		currentModel.destroy();
-		currentModel = null;
-	}
+	currentModel = null;
 	if (app) {
 		app.destroy(true, { children: true });
 		app = null;

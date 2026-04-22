@@ -4,6 +4,10 @@ export function openLive2dWindow(): Promise<void> {
 	return invoke('open_live2d_window');
 }
 
+export function openSettingsWindow(): Promise<void> {
+	return invoke('open_settings_window');
+}
+
 export function closeLive2dWindow(): Promise<void> {
 	return invoke('close_live2d_window');
 }
