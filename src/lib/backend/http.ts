@@ -141,3 +141,45 @@ export async function streamChat(
 	}
 }
 
+export async function getStatus(): Promise<Record<string, unknown>> {
+	const base = await getHttpBase();
+	const res = await fetch(`${base}/status`);
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	return res.json();
+}
+
+export async function getAllConfig(): Promise<Record<string, unknown>> {
+	const base = await getHttpBase();
+	const res = await fetch(`${base}/config/`);
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	return res.json();
+}
+
+export async function batchUpdateConfig(updates: Record<string, unknown>): Promise<Record<string, unknown>> {
+	const base = await getHttpBase();
+	const res = await fetch(`${base}/config/`, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(updates)
+	});
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	return res.json();
+}
+
+export async function getConfig(key: string): Promise<Record<string, unknown>> {
+	const base = await getHttpBase();
+	const res = await fetch(`${base}/config/${encodeURIComponent(key)}`);
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	return res.json();
+}
+
+export async function setConfig(key: string, value: Record<string, unknown>): Promise<Record<string, unknown>> {
+	const base = await getHttpBase();
+	const res = await fetch(`${base}/config/${encodeURIComponent(key)}`, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(value)
+	});
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	return res.json();
+}

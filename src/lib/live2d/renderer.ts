@@ -64,7 +64,10 @@ export async function loadModelFromUrl(url: string): Promise<void> {
 		currentModel = null;
 	}
 
-	const model = await Live2DModel_.from(url);
+	const model = await Live2DModel_.from(url, {
+		autoInteract: false,
+		autoFocus: false,
+	} as Parameters<typeof Live2DModel_.from>[1]);
 
 	model.anchor.set(0.5);
 	const scale = Math.min((app.screen.width / model.width) * 0.8, (app.screen.height / model.height) * 0.8);
@@ -100,6 +103,12 @@ export function needsBackendLipsync(): boolean {
 export function setExpression(name: string): void {
 	if (!currentModel) return;
 	currentModel.expression(name);
+}
+
+/** Feed an external cursor position (normalised -1..1) to the model's eye-tracking. */
+export function setFocus(x: number, y: number): void {
+	if (!currentModel) return;
+	(currentModel as Live2DModelType & { focus(x: number, y: number): void }).focus(x, y);
 }
 
 /**

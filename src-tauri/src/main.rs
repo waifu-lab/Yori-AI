@@ -82,6 +82,7 @@ fn main() {
                 log::warn!("waifu-node auto-start skipped: {err}");
             }
 
+            command::mouse_track::start_mouse_tracker(app.handle().clone());
             let _tray = app::build_tray(app)?;
             Ok(())
         })

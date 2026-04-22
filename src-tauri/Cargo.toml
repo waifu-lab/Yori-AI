@@ -52,6 +52,7 @@ reqwest = { version = "0.12", features = ["json", "stream"] }
 # utility dependencies
 anyhow = "1.0.100"
 thiserror = "2.0.17"
+
 notify = "8.2.0"
 strfmt = "0.2.5"
 
@@ -59,3 +60,6 @@ strfmt = "0.2.5"
 # sandbox dependencies
 wit-bindgen = "0.48.1"
 wasmtime = "39.0.1"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }

@@ -1,14 +1,38 @@
 use tauri::{
-    App, Result, Runtime,
+    App, Manager, Result, Runtime,
     menu::{Menu, MenuItem},
     tray::{TrayIcon, TrayIconBuilder},
+    WebviewUrl, WebviewWindowBuilder,
 };
 
 pub fn build_menu<R: Runtime>(app: &App<R>) -> Result<Menu<R>> {
     let menu = Menu::new(app)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, Option::<&str>::None)?;
+    let show = MenuItem::with_id(app, "show", "開啟主介面", true, Option::<&str>::None)?;
+    let settings = MenuItem::with_id(app, "settings", "設定", true, Option::<&str>::None)?;
+    let quit = MenuItem::with_id(app, "quit", "離開", true, Option::<&str>::None)?;
+    menu.append(&show)?;
+    menu.append(&settings)?;
     menu.append(&quit)?;
     Ok(menu)
+}
+
+fn open_or_create_window<R: Runtime>(
+    app: &tauri::AppHandle<R>,
+    label: &str,
+    url: &str,
+    title: &str,
+    width: f64,
+    height: f64,
+) {
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.show();
+        let _ = window.set_focus();
+    } else {
+        let _ = WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
+            .title(title)
+            .inner_size(width, height)
+            .build();
+    }
 }
 
 pub fn build_tray<R: Runtime>(app: &App<R>) -> Result<TrayIcon<R>> {
@@ -16,10 +40,17 @@ pub fn build_tray<R: Runtime>(app: &App<R>) -> Result<TrayIcon<R>> {
 
     TrayIconBuilder::new()
         .menu(&tray_menu)
-        .on_menu_event(|app, event| {
-            if event.id().as_ref() == "quit" {
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "show" => {
+                open_or_create_window(app, "main", "/", "Yori AI Dashboard", 800.0, 600.0);
+            }
+            "settings" => {
+                open_or_create_window(app, "settings", "settings", "設定", 860.0, 600.0);
+            }
+            "quit" => {
                 app.exit(0);
             }
+            _ => {}
         })
         .build(app)
 }

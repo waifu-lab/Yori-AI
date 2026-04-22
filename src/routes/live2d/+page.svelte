@@ -1,13 +1,23 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { listen } from '@tauri-apps/api/event';
-	import { getCurrentModelUrl } from '$lib/commands';
-	import { initApp, loadModelFromUrl, destroyApp, setExpression, playAudio, scheduleLipsync, needsBackendLipsync } from '$lib/live2d/renderer';
-	import { onEvent } from '$lib/backend/ws';
+	import { onDestroy, onMount } from 'svelte';
 	import type { UnlistenFn } from '@tauri-apps/api/event';
+	import { listen } from '@tauri-apps/api/event';
+	import { onEvent } from '$lib/backend/ws';
+	import { getCurrentModelUrl } from '$lib/commands';
+	import {
+		destroyApp,
+		initApp,
+		loadModelFromUrl,
+		needsBackendLipsync,
+		playAudio,
+		scheduleLipsync,
+		setExpression,
+		setFocus
+	} from '$lib/live2d/renderer';
 
 	let container: HTMLDivElement;
 	let unlisten: (() => void) | null = null;
+	let unlistenCursor: UnlistenFn | null = null;
 	let unlistenEvent: UnlistenFn | null = null;
 
 	onMount(async () => {
@@ -22,10 +32,7 @@
 			});
 		}
 
-		await Promise.all([
-			loadScript('/live2d.min.js'),
-			loadScript('/live2dcubismcore.min.js'),
-		]);
+		await Promise.all([loadScript('/live2d.min.js'), loadScript('/live2dcubismcore.min.js')]);
 
 		await initApp(container);
 
@@ -38,6 +45,11 @@
 		// Listen for model-load events from the main window (payload is model URL)
 		unlisten = await listen<string>('load-model', async (event) => {
 			await loadModelFromUrl(event.payload);
+		});
+
+		// Global cursor tracking from Rust (works even when cursor is outside the window)
+		unlistenCursor = await listen<{ x: number; y: number }>('cursor-pos', (event) => {
+			setFocus(event.payload.x, event.payload.y);
 		});
 
 		// Handle Live2D events pushed from the backend (emotion / audio / lipsync)
@@ -56,6 +68,7 @@
 
 	onDestroy(() => {
 		unlisten?.();
+		unlistenCursor?.();
 		unlistenEvent?.();
 		destroyApp();
 	});
