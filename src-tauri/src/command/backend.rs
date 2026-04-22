@@ -63,13 +63,26 @@ pub fn backend_send_chat(
 ) -> Result<String, String> {
     let request_id = Uuid::new_v4().to_string();
     let conversation_id = state.get_conversation_id();
+    // Only ask the backend to compute lipsync visemes when Live2D is active AND
+    // the loaded model has no native LipSync parameter group.
+    let need_lipsync = if live2d == Some(true) {
+        Some(state.get_need_backend_lipsync())
+    } else {
+        None
+    };
     ws.send(ClientMsg::Chat(ChatMsg {
         conversation_id,
         request_id: request_id.clone(),
         content,
         live2d,
+        need_lipsync,
     }))?;
     Ok(request_id)
+}
+
+#[tauri::command]
+pub fn live2d_set_lipsync_mode(need_backend_lipsync: bool, state: State<AppState>) {
+    state.set_need_backend_lipsync(need_backend_lipsync);
 }
 
 #[tauri::command]

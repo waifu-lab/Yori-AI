@@ -1,3 +1,9 @@
+export interface ConnectedMessage {
+	type: 'connected';
+	session_token: string;
+	emotions?: string[];
+}
+
 export interface ChatMessage {
 	type: 'chat';
 	conversation_id?: string;
@@ -28,10 +34,30 @@ export interface DoneMessage {
 	content: string;
 }
 
-export interface EventMessage {
-	type: 'event';
-	[key: string]: unknown;
+export interface Viseme {
+	time_ms: number;
+	value: number; // 0–1 mouth open amount
 }
+
+export interface EmotionEventMessage {
+	type: 'event';
+	event: 'emotion';
+	data: { emotion: string };
+}
+
+export interface AudioEventMessage {
+	type: 'event';
+	event: 'audio';
+	data: { audio: string; format: string }; // audio is base64
+}
+
+export interface LipsyncEventMessage {
+	type: 'event';
+	event: 'lipsync';
+	data: { visemes: Viseme[] };
+}
+
+export type EventMessage = EmotionEventMessage | AudioEventMessage | LipsyncEventMessage;
 
 export interface ErrorMessage {
 	type: 'error';

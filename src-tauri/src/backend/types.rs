@@ -13,8 +13,14 @@ pub struct ChatMsg {
     pub conversation_id: Option<String>,
     pub request_id: String,
     pub content: String,
+    /// Whether to trigger emotion / audio events on the backend.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub live2d: Option<bool>,
+    /// Whether the frontend needs the backend to compute and return lipsync viseme data.
+    /// Only relevant when `live2d = true` and TTS is enabled.
+    /// Set to `false` (or omit) when the Live2D model supports native LipSync via `speak()`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub need_lipsync: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -29,10 +35,19 @@ pub struct VoiceMsg {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMsg {
+    Connected(ConnectedMsg),
     Chunk(ChunkMsg),
     Done(DoneMsg),
     Event(EventMsg),
     Error(BackendError),
+}
+
+/// First message sent by the server after WebSocket connection is established.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ConnectedMsg {
+    pub session_token: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub emotions: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

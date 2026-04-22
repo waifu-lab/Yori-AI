@@ -14,7 +14,7 @@
 		if (!value.trim() || sending) return;
 		sending = true;
 		try {
-			const requestId = await sendChat(value.trim());
+			const requestId = await sendChat(value.trim(), true);
 			chatStore.addUserMessage(requestId, value.trim());
 		} finally {
 			sending = false;
@@ -52,11 +52,6 @@
 	{/snippet}
 
 	{#snippet input()}
-		<Chat.SmartInput
-			bind:value={inputValue}
-			disabled={sending}
-			placeholder="輸入訊息..."
-			onSend={handleSend}
-		/>
+		<Chat.SmartInput bind:value={inputValue} disabled={sending} placeholder="輸入訊息..." onSend={handleSend} />
 	{/snippet}
 </FloatingChatLayout.Root>

@@ -51,3 +51,11 @@ export function agentStatus(): Promise<NodeStatus> {
 export function agentIsInstalled(): Promise<boolean> {
 	return invoke('waifu_node_is_installed');
 }
+
+/**
+ * Tell the Rust backend whether the currently loaded Live2D model requires
+ * server-side lipsync viseme computation (`true` = no native LipSync group).
+ */
+export function setLipsyncMode(needBackendLipsync: boolean): Promise<void> {
+	return invoke('live2d_set_lipsync_mode', { needBackendLipsync });
+}

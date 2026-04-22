@@ -9,6 +9,9 @@ pub struct AppState {
     pub conversation_id: Mutex<Option<String>>,
     /// Cached backend base URL (ws://host:port). Persisted via tauri-plugin-store.
     pub backend_url: Mutex<String>,
+    /// Whether the currently loaded Live2D model lacks a native LipSync parameter
+    /// group, so the backend should compute and return viseme data.
+    pub need_backend_lipsync: Mutex<bool>,
 }
 
 impl AppState {
@@ -16,6 +19,7 @@ impl AppState {
         Self {
             conversation_id: Mutex::new(None),
             backend_url: Mutex::new(DEFAULT_BACKEND_URL.to_string()),
+            need_backend_lipsync: Mutex::new(false),
         }
     }
 
@@ -33,6 +37,14 @@ impl AppState {
 
     pub fn set_backend_url(&self, url: String) {
         *self.backend_url.lock() = url;
+    }
+
+    pub fn set_need_backend_lipsync(&self, need: bool) {
+        *self.need_backend_lipsync.lock() = need;
+    }
+
+    pub fn get_need_backend_lipsync(&self) -> bool {
+        *self.need_backend_lipsync.lock()
     }
 }
 

@@ -2,10 +2,13 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { listen } from '@tauri-apps/api/event';
 	import { getCurrentModelUrl } from '$lib/commands';
-	import { initApp, loadModelFromUrl, destroyApp } from '$lib/live2d/renderer';
+	import { initApp, loadModelFromUrl, destroyApp, setExpression, playAudio, scheduleLipsync, needsBackendLipsync } from '$lib/live2d/renderer';
+	import { onEvent } from '$lib/backend/ws';
+	import type { UnlistenFn } from '@tauri-apps/api/event';
 
 	let container: HTMLDivElement;
 	let unlisten: (() => void) | null = null;
+	let unlistenEvent: UnlistenFn | null = null;
 
 	onMount(async () => {
 		// Load both Cubism 2 and Cubism 4 runtimes before importing pixi-live2d-display
@@ -36,10 +39,24 @@
 		unlisten = await listen<string>('load-model', async (event) => {
 			await loadModelFromUrl(event.payload);
 		});
+
+		// Handle Live2D events pushed from the backend (emotion / audio / lipsync)
+		unlistenEvent = await onEvent((msg) => {
+			if (msg.event === 'emotion') {
+				setExpression(msg.data.emotion);
+			} else if (msg.event === 'audio') {
+				playAudio(msg.data.audio, msg.data.format);
+			} else if (msg.event === 'lipsync' && needsBackendLipsync()) {
+				// Only drive the mouth manually when the model has no native LipSync group.
+				// If the model supports speak(), the engine handles lip sync internally.
+				scheduleLipsync(msg.data.visemes);
+			}
+		});
 	});
 
 	onDestroy(() => {
 		unlisten?.();
+		unlistenEvent?.();
 		destroyApp();
 	});
 </script>

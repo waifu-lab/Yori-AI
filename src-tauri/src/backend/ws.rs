@@ -49,7 +49,6 @@ impl WsActor {
             match connect_async(&url).await {
                 Ok((ws_stream, _)) => {
                     delay = RECONNECT_INITIAL_MS;
-                    self.app.emit("backend-connected", ()).ok();
                     if let Some(mgr) = self.app.try_state::<WaifuNodeManager>() {
                         if let Err(e) = mgr.start() {
                             log::warn!("waifu-node restart on backend reconnect failed: {e}");
@@ -95,6 +94,9 @@ impl WsActor {
             return;
         };
         match msg {
+            ServerMsg::Connected(c) => {
+                self.app.emit("backend-connected", c).ok();
+            }
             ServerMsg::Chunk(c) => {
                 self.app.emit("chat-chunk", c).ok();
             }

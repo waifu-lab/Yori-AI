@@ -1,5 +1,7 @@
 import type { Application } from 'pixi.js';
 import type { Live2DModel as Live2DModelType } from 'untitled-pixi-live2d-engine';
+import type { Viseme } from '$lib/backend/types';
+import { setLipsyncMode } from '$lib/commands';
 
 let Application_: typeof import('pixi.js').Application;
 let Live2DModel_: typeof Live2DModelType;
@@ -7,6 +9,15 @@ let Live2DModel_: typeof Live2DModelType;
 let app: Application | null = null;
 let currentModel: Live2DModelType | null = null;
 let initialized = false;
+
+/** Whether the loaded model has a formal LipSync parameter group. */
+let hasNativeLipSync = false;
+
+/** Active audio element for TTS playback. */
+let activeAudio: HTMLAudioElement | null = null;
+
+/** Scheduled lipsync animation frame ID. */
+let lipsyncRafId: number | null = null;
 
 async function ensureLoaded() {
 	if (initialized) return;
@@ -62,6 +73,28 @@ export async function loadModelFromUrl(url: string): Promise<void> {
 
 	app.stage.addChild(model as any);
 	currentModel = model;
+
+	// Detect whether the model has formal LipSync parameter ids.
+	// CubismMotionManager.lipSyncIds is populated from the model3.json Groups[].Ids
+	// when the group Name is 'LipSync'.
+	const internalModel = (model as any).internalModel;
+	console.debug('[live2d] internalModel:', internalModel);
+	console.debug('[live2d] settings:', internalModel?.settings);
+	console.debug('[live2d] settings.Groups:', internalModel?.settings?.Groups);
+	console.debug('[live2d] motionManager:', internalModel?.motionManager);
+	console.debug('[live2d] lipSyncIds:', internalModel?.motionManager?.lipSyncIds);
+	const lipSyncIds: string[] = internalModel?.motionManager?.lipSyncIds ?? [];
+	hasNativeLipSync = lipSyncIds.length > 0;
+
+	// Notify Rust backend: if no native LipSync, backend should compute viseme data.
+	setLipsyncMode(!hasNativeLipSync).catch((e) =>
+		console.warn('[live2d] setLipsyncMode failed:', e)
+	);
+}
+
+/** Returns true when the loaded model has no native LipSync and requires backend visemes. */
+export function needsBackendLipsync(): boolean {
+	return !hasNativeLipSync;
 }
 
 export function setExpression(name: string): void {
@@ -69,7 +102,85 @@ export function setExpression(name: string): void {
 	currentModel.expression(name);
 }
 
+/**
+ * Play a base64-encoded audio clip. If the model has native LipSync support the
+ * engine's `speak()` method is used, which drives the mouth automatically.
+ * Otherwise we rely on `scheduleLipsync()` called separately with viseme data.
+ */
+export function playAudio(audioB64: string, format: string): void {
+	stopAudio();
+	const dataUrl = `data:audio/${format};base64,${audioB64}`;
+	if (hasNativeLipSync && currentModel) {
+		(currentModel as any).speak(dataUrl);
+	} else {
+		activeAudio = new Audio(dataUrl);
+		activeAudio.play().catch((e) => console.warn('[live2d] audio play failed:', e));
+	}
+}
+
+function stopAudio(): void {
+	if (activeAudio) {
+		activeAudio.pause();
+		activeAudio = null;
+	}
+}
+
+/**
+ * Schedule manual lipsync viseme animation.
+ * `visemes` is an array of `{ time_ms, value }` where `value` is 0–1 mouth open.
+ * Requires the model to expose a "ParamMouthOpenY" (or similar) core parameter.
+ */
+export function scheduleLipsync(visemes: Viseme[]): void {
+	if (!currentModel || visemes.length === 0) return;
+	cancelLipsync();
+
+	const coreModel = (currentModel as any).internalModel?.coreModel;
+	if (!coreModel) return;
+
+	// Use the LipSync parameter id from motionManager if available,
+	// otherwise fall back to the standard Cubism 4 / Cubism 2 name.
+	const lipSyncIds: string[] = (currentModel as any).internalModel?.motionManager?.lipSyncIds ?? [];
+	const paramId: string = lipSyncIds[0] ?? 'ParamMouthOpenY';
+
+	const startTime = performance.now();
+	let index = 0;
+
+	function frame() {
+		if (!currentModel) return;
+		const elapsed = performance.now() - startTime;
+
+		// Advance index to the current viseme.
+		while (index + 1 < visemes.length && visemes[index + 1].time_ms <= elapsed) {
+			index++;
+		}
+
+		const value = visemes[index].value;
+		try {
+			coreModel.setParameterValueById(paramId, value);
+		} catch {
+			// Parameter not found — silently skip.
+		}
+
+		if (index < visemes.length - 1) {
+			lipsyncRafId = requestAnimationFrame(frame);
+		} else {
+			lipsyncRafId = null;
+		}
+	}
+
+	lipsyncRafId = requestAnimationFrame(frame);
+}
+
+function cancelLipsync(): void {
+	if (lipsyncRafId !== null) {
+		cancelAnimationFrame(lipsyncRafId);
+		lipsyncRafId = null;
+	}
+}
+
 export function destroyApp(): void {
+	cancelLipsync();
+	stopAudio();
 	if (currentModel) {
 		currentModel.destroy();
 		currentModel = null;

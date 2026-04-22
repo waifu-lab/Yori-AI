@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
-import type { ChunkMessage, DoneMessage, EventMessage, ErrorMessage } from './types';
+import type { ChunkMessage, ConnectedMessage, DoneMessage, EventMessage, ErrorMessage } from './types';
 
 export function sendChat(content: string, live2d?: boolean): Promise<string> {
 	return invoke<string>('backend_send_chat', { content, live2d });
@@ -27,8 +27,8 @@ export function onError(cb: (msg: ErrorMessage) => void): Promise<UnlistenFn> {
 	return listen<ErrorMessage>('backend-error', (e) => cb(e.payload));
 }
 
-export function onConnected(cb: () => void): Promise<UnlistenFn> {
-	return listen('backend-connected', () => cb());
+export function onConnected(cb: (msg: ConnectedMessage) => void): Promise<UnlistenFn> {
+	return listen<ConnectedMessage>('backend-connected', (e) => cb(e.payload));
 }
 
 export function onDisconnected(cb: () => void): Promise<UnlistenFn> {
