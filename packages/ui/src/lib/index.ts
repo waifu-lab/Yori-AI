@@ -21,13 +21,13 @@ export { default as Command } from './molecules/Command.svelte';
 export { default as Toolbar } from './molecules/Toolbar.svelte';
 export { default as StepIndicator } from './molecules/StepIndicator.svelte';
 export { default as MarkdownRenderer } from './molecules/MarkdownRenderer.svelte';
-export { default as SettingCard } from './molecules/setting/SettingCard.svelte';
-export { default as ChatLayout } from './molecules/chat/ChatLayout.svelte';
-export { default as AiBubble } from './molecules/chat/AiBubble.svelte';
-export { default as UserBubble } from './molecules/chat/UserBubble.svelte';
-export { default as SmartInput } from './molecules/chat/SmartInput.svelte';
+export { default as ConversationList } from './molecules/ConversationList.svelte';
+export { default as ToolPanel } from './molecules/ToolPanel.svelte';
+export * as Chat from './molecules/chat/index.js';
+export * as Setting from './molecules/setting/index.js';
 
 // Layouts
-export { default as AppShell } from './layouts/AppShell.svelte';
-export { default as SettingsLayout } from './layouts/SettingsLayout.svelte';
-export { default as OnboardingLayout } from './layouts/OnboardingLayout.svelte';
+export * as AppShell from './layouts/AppShell/index.js';
+export * as SettingsLayout from './layouts/SettingsLayout/index.js';
+export * as OnboardingLayout from './layouts/OnboardingLayout/index.js';
+export * as FloatingChatLayout from './layouts/FloatingChatLayout/index.js';

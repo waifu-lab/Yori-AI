@@ -4,12 +4,11 @@
 	interface Props {
 		content?: string;
 		timestamp?: string;
-		avatar?: string;
 		children?: Snippet;
 		class?: string;
 	}
 
-	let { content = '', timestamp, avatar, children, class: className = '' }: Props = $props();
+	let { content = '', timestamp, children, class: className = '' }: Props = $props();
 
 	let showActions = $state(false);
 </script>
@@ -51,15 +50,5 @@
 				Edit
 			</button>
 		</div>
-	</div>
-
-	<div
-		class="bg-elevated text-muted-foreground mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-	>
-		{#if avatar}
-			<img src={avatar} alt="User" class="h-full w-full rounded-full object-cover" />
-		{:else}
-			U
-		{/if}
 	</div>
 </div>

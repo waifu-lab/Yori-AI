@@ -161,9 +161,4 @@
 			</button>
 		</div>
 	</div>
-
-	<p class="text-faint mt-2 text-center text-xs">
-		Press <kbd class="bg-elevated text-muted-foreground rounded px-1 py-0.5 text-xs">Enter</kbd> to send,
-		<kbd class="bg-elevated text-muted-foreground rounded px-1 py-0.5 text-xs">Shift+Enter</kbd> for new line
-	</p>
 </div>

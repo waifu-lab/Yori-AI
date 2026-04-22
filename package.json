@@ -52,6 +52,7 @@
     "@tauri-apps/plugin-dialog": "catalog:",
     "@tauri-apps/plugin-store": "catalog:",
     "@waifu/ui": "workspace:*",
+    "axios": "^1.15.2",
     "pixi.js": "8",
     "untitled-pixi-live2d-engine": "^1.0.2"
   }

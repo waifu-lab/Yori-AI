@@ -1,1 +1,38 @@
 @import 'tailwindcss';
+@import '@waifu/ui/theme.css';
+@plugin "@tailwindcss/typography";
+
+@utility prose-edit {
+  --tw-prose-body: var(--color-text);
+  --tw-prose-headings: var(--color-text);
+  --tw-prose-lead: var(--color-text-muted);
+  --tw-prose-links: var(--color-primary);
+  --tw-prose-bold: var(--color-text);
+  --tw-prose-counters: var(--color-text-muted);
+  --tw-prose-bullets: var(--color-text-muted);
+  --tw-prose-hr: var(--color-elevated);
+  --tw-prose-quotes: var(--color-text-muted);
+  --tw-prose-quote-borders: var(--color-primary);
+  --tw-prose-captions: var(--color-text-muted);
+  --tw-prose-code: var(--color-text);
+  --tw-prose-pre-code: var(--color-text);
+  --tw-prose-pre-bg: var(--color-surface);
+  --tw-prose-th-borders: var(--color-elevated);
+  --tw-prose-td-borders: var(--color-elevated);
+  --tw-prose-invert-body: var(--color-text);
+  --tw-prose-invert-headings: var(--color-text);
+  --tw-prose-invert-lead: var(--color-text-muted);
+  --tw-prose-invert-links: var(--color-primary);
+  --tw-prose-invert-bold: var(--color-text);
+  --tw-prose-invert-counters: var(--color-text-muted);
+  --tw-prose-invert-bullets: var(--color-text-muted);
+  --tw-prose-invert-hr: var(--color-elevated);
+  --tw-prose-invert-quotes: var(--color-text-muted);
+  --tw-prose-invert-quote-borders: var(--color-primary);
+  --tw-prose-invert-captions: var(--color-text-muted);
+  --tw-prose-invert-code: var(--color-text);
+  --tw-prose-invert-pre-code: var(--color-text);
+  --tw-prose-invert-pre-bg: var(--color-surface);
+  --tw-prose-invert-th-borders: var(--color-elevated);
+  --tw-prose-invert-td-borders: var(--color-elevated);
+}

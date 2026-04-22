@@ -25,8 +25,9 @@
 		expanded[href] = !expanded[href];
 	}
 
-	function isActive(href: string) {
-		return currentPath === href || currentPath.startsWith(href + '/');
+	function isActive(href: string, hasChildren = false) {
+		if (hasChildren) return currentPath === href || currentPath.startsWith(href + '/');
+		return currentPath === href;
 	}
 </script>
 
@@ -46,12 +47,10 @@
 						onclick={() => toggleExpanded(item.href)}
 						class="group duration-fast flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm
               font-semibold transition-colors
-              {isActive(item.href)
+              {isActive(item.href, true)
 							? 'bg-elevated text-foreground'
 							: 'text-muted-foreground hover:bg-elevated hover:text-foreground'}"
 					>
-						<span class="{item.icon} h-5 w-5 shrink-0"></span>
-						<span class="flex-1 text-left">{item.label}</span>
 
 						<svg
 							class="text-faint duration-fast h-4 w-4 transition-transform"

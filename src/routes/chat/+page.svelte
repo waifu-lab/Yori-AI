@@ -1,75 +1,100 @@
-<!--TODO: 需要重寫-->
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { chatStore } from '$lib/stores/chat.svelte';
-	import { sendChat } from '$lib/backend/ws';
+	import { onMount } from 'svelte';
+	import { AppShell, Chat, ConversationList, ToolPanel } from '@waifu/ui';
+	import { chatHttpStore } from '$lib/stores/chatHttp.svelte';
 
-	let input = $state('');
-	let sending = $state(false);
-	let listEl: HTMLElement;
+	let inputValue = $state('');
+	let toolPanelOpen = $state(false);
 
-	onMount(() => chatStore.init());
-	onDestroy(() => chatStore.destroy());
-
-	$effect(() => {
-		// 有新訊息時捲到底部
-		chatStore.messages;
-		listEl?.scrollTo({ top: listEl.scrollHeight, behavior: 'smooth' });
+	onMount(() => {
+		chatHttpStore.loadConversations();
 	});
 
-	async function handleSend() {
-		const content = input.trim();
-		if (!content || sending) return;
-
-		input = '';
-		sending = true;
-		try {
-			const requestId = await sendChat(content);
-			chatStore.addUserMessage(requestId, content);
-		} finally {
-			sending = false;
-		}
+	async function handleSend(value: string) {
+		if (!value.trim() || chatHttpStore.sending) return;
+		await chatHttpStore.send(value.trim());
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' && !e.shiftKey) {
-			e.preventDefault();
-			handleSend();
-		}
+	function handleNewConversation() {
+		chatHttpStore.newConversation();
 	}
+
+	const conversations = $derived(
+		chatHttpStore.conversations.map((c) => ({
+			id: c.id,
+			title: (c.title as string) || '對話',
+			preview: '',
+			timestamp: c.updated_at ? new Date(c.updated_at as string).toLocaleDateString('zh-TW') : ''
+		}))
+	);
 </script>
 
-<div class="flex h-full flex-col">
-	<!-- message list -->
-	<div bind:this={listEl} class="flex-1 space-y-3 overflow-y-auto p-4">
-		{#each chatStore.messages as msg (msg.id)}
-			<div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
-				<div
-					class="max-w-[70%] rounded-2xl px-4 py-2 text-sm
-						{msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}
-						{msg.pending ? 'opacity-70' : ''}"
-				>
-					{msg.content}{#if msg.pending}<span class="animate-pulse">▍</span>{/if}
-				</div>
-			</div>
-		{/each}
-	</div>
+<AppShell.Root>
+	<AppShell.Sidebar class="w-[240px]">
+		<ConversationList
+			{conversations}
+			activeId={chatHttpStore.activeConversationId ?? ''}
+			onSelect={(id) => chatHttpStore.selectConversation(id)}
+			onNew={handleNewConversation}
+		/>
+	</AppShell.Sidebar>
 
-	<!-- input bar -->
-	<div class="flex gap-2 border-t p-4">
-		<textarea
-			bind:value={input}
-			onkeydown={handleKeydown}
-			placeholder="輸入訊息..."
-			rows={1}
-			class="bg-background focus:ring-primary flex-1 resize-none rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
-		></textarea>
-		<button
-			onclick={handleSend}
-			disabled={sending || !input.trim()}
-			class="bg-primary text-primary-foreground rounded-xl px-4 py-2 text-sm disabled:opacity-40"
-		>
-			送出
-		</button>
+	<AppShell.Content>
+		<Chat.Layout hasMessages={chatHttpStore.messages.length > 0}>
+			{#snippet header()}
+				<div class="flex w-full items-center justify-end">
+					<button
+						type="button"
+						onclick={() => (toolPanelOpen = true)}
+						class="text-muted-foreground hover:bg-elevated hover:text-foreground flex h-8 items-center
+							 rounded-md text-xs font-medium transition-colors"
+						title="工具記錄"
+					>
+						<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none">
+							<rect x="2" y="3" width="12" height="2" rx="1" fill="currentColor" />
+							<rect x="2" y="7" width="8" height="2" rx="1" fill="currentColor" />
+							<rect x="2" y="11" width="10" height="2" rx="1" fill="currentColor" />
+						</svg>
+					</button>
+				</div>
+			{/snippet}
+
+			{#snippet empty()}
+				<div class="text-faint flex h-full items-center justify-center text-sm">開始一段對話吧</div>
+			{/snippet}
+
+			{#snippet messages()}
+				{#each chatHttpStore.messages as msg (msg.id)}
+					{#if msg.role === 'user'}
+						<div class="flex justify-end">
+							<Chat.UserBubble content={msg.content} />
+						</div>
+					{:else}
+						<Chat.AiResult content={msg.content} isStreaming={msg.pending} />
+					{/if}
+				{/each}
+			{/snippet}
+
+			{#snippet input()}
+				<Chat.SmartInput
+					bind:value={inputValue}
+					disabled={chatHttpStore.sending}
+					placeholder="輸入訊息..."
+					models={[
+						{ value: 'gpt-4o', label: 'GPT-4o' },
+						{ value: 'claude-3-5', label: 'Claude 3.5 Sonnet' },
+						{ value: 'gemini-1-5', label: 'Gemini 1.5 Pro' }
+					]}
+					selectedModel="gpt-4o"
+					onSend={handleSend}
+				/>
+			{/snippet}
+		</Chat.Layout>
+	</AppShell.Content>
+</AppShell.Root>
+
+<ToolPanel open={toolPanelOpen} title="工具記錄" onClose={() => (toolPanelOpen = false)}>
+	<div class="space-y-3">
+		<p class="text-muted-foreground text-xs">此次對話使用的工具與產生的檔案會顯示在這裡。</p>
 	</div>
-</div>
+</ToolPanel>

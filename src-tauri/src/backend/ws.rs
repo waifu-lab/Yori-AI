@@ -2,11 +2,12 @@ use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
 use parking_lot::Mutex;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::mpsc;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use super::types::{ClientMsg, ServerMsg};
+use crate::waifu_node::WaifuNodeManager;
 
 fn ws_url(base: &str) -> String {
     let trimmed = base.trim_end_matches('/');
@@ -49,6 +50,11 @@ impl WsActor {
                 Ok((ws_stream, _)) => {
                     delay = RECONNECT_INITIAL_MS;
                     self.app.emit("backend-connected", ()).ok();
+                    if let Some(mgr) = self.app.try_state::<WaifuNodeManager>() {
+                        if let Err(e) = mgr.start() {
+                            log::warn!("waifu-node restart on backend reconnect failed: {e}");
+                        }
+                    }
                     let (mut sink, mut stream) = ws_stream.split();
 
                     // Drain any queued outbound messages, then handle incoming.

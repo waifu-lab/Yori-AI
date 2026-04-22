@@ -65,8 +65,13 @@ impl WaifuNodeManager {
     /// Start IPC proxy (once), then spawn waifu-node in ipc mode.
     pub fn start(&self) -> Result<(), String> {
         let mut guard = self.process.lock();
-        if guard.is_some() {
-            return Ok(());
+        if let Some(child) = guard.as_mut() {
+            match child.try_wait() {
+                Ok(None) => return Ok(()), // still running
+                _ => {
+                    *guard = None; // exited — fall through to restart
+                }
+            }
         }
 
         let bin = self.resolve_bin().ok_or("waifu-node is not installed")?;

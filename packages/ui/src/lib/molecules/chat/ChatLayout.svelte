@@ -25,12 +25,12 @@
 
 <div class="bg-canvas flex h-full flex-col {className}">
 	{#if header}
-		<div class="bg-canvas flex-shrink-0 px-6 py-4">
+		<div class="bg-canvas flex-shrink-0 px-4">
 			{@render header()}
 		</div>
 	{/if}
 
-	<div bind:this={scrollEl} class="flex-1 space-y-6 overflow-y-auto px-6 py-4">
+	<div bind:this={scrollEl} class="flex-1 space-y-6 overflow-y-auto px-4 py-4">
 		{#if !hasMessages && empty}
 			<div class="flex h-full items-center justify-center">
 				{@render empty()}

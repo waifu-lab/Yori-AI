@@ -1,16 +1,16 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import MarkdownRenderer from '../MarkdownRenderer.svelte';
 
 	interface Props {
 		content?: string;
 		isStreaming?: boolean;
 		timestamp?: string;
-		avatar?: string;
 		children?: Snippet;
 		class?: string;
 	}
 
-	let { content = '', isStreaming = false, timestamp, avatar, children, class: className = '' }: Props = $props();
+	let { content = '', isStreaming = false, timestamp, children, class: className = '' }: Props = $props();
 
 	let showActions = $state(false);
 
@@ -25,27 +25,12 @@
 	onmouseleave={() => (showActions = false)}
 	role="article"
 >
-	<div class="bg-primary-bloom mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md">
-		{#if avatar}
-			<img src={avatar} alt="AI" class="h-full w-full rounded-md object-cover" />
-		{:else}
-			<svg class="text-primary h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
-				<path
-					d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2zm0 2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0 8.5c-2 0-3.75-1-4.75-2.5.75-1.25 2.5-2 4.75-2s4 .75 4.75 2c-1 1.5-2.75 2.5-4.75 2.5z"
-				/>
-			</svg>
-		{/if}
-	</div>
-
 	<div class="flex min-w-0 flex-col gap-1">
-		<div
-			class="bg-surface text-foreground relative px-4 py-3 text-sm leading-relaxed"
-			style="border-radius: 12px 12px 12px 4px;"
-		>
+		<div class="text-foreground relative text-sm leading-relaxed">
 			{#if children}
 				{@render children()}
 			{:else}
-				<span>{content}</span>
+				<MarkdownRenderer source={content} />
 			{/if}
 
 			{#if isStreaming}

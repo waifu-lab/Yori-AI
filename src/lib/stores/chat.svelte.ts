@@ -12,12 +12,13 @@ class ChatStore {
 	async init() {
 		const [unChunk, unDone, unErr] = await Promise.all([
 			onChunk((msg) => {
-				const entry = this.messages.find((m) => m.id === msg.request_id);
+				const aid = msg.request_id + '-a';
+				const entry = this.messages.find((m) => m.id === aid);
 				if (entry) {
 					entry.content += msg.content;
 				} else {
 					this.messages.push({
-						id: msg.request_id,
+						id: aid,
 						role: 'assistant',
 						content: msg.content,
 						pending: true
@@ -26,10 +27,18 @@ class ChatStore {
 			}),
 
 			onDone((msg) => {
-				const entry = this.messages.find((m) => m.id === msg.request_id);
+				const aid = msg.request_id + '-a';
+				const entry = this.messages.find((m) => m.id === aid);
 				if (entry) {
 					entry.content = msg.content;
 					entry.pending = false;
+				} else {
+					this.messages.push({
+						id: aid,
+						role: 'assistant',
+						content: msg.content,
+						pending: false
+					});
 				}
 			}),
 

@@ -85,58 +85,57 @@ async fn proxy_pipe_to_ws(
         }
     });
 
-    loop {
-        let (ws_stream, _) = match connect_async(node_url).await {
-            Ok(v) => v,
+    // Retry the initial connection until waifu-node's pipe side is alive.
+    let (ws_stream, _) = loop {
+        match connect_async(node_url).await {
+            Ok(v) => break v,
             Err(e) => {
                 if read_task.is_finished() {
-                    break;
+                    return Ok(());
                 }
                 log::warn!("IPC proxy failed to connect backend {node_url}: {e}");
                 tokio::time::sleep(Duration::from_secs(3)).await;
-                continue;
             }
-        };
+        }
+    };
 
-        let (mut ws_sink, mut ws_stream) = ws_stream.split();
-        log::info!("IPC proxy connected backend {node_url}");
+    let (mut ws_sink, mut ws_stream) = ws_stream.split();
+    log::info!("IPC proxy connected backend {node_url}");
 
-        loop {
-            tokio::select! {
-                line = pipe_rx.recv() => {
-                    match line {
-                        Some(line) => {
-                            if ws_sink.send(Message::Text(line.into())).await.is_err() {
-                                break;
-                            }
-                        }
-                        None => {
-                            read_task.abort();
-                            return Ok(());
+    loop {
+        tokio::select! {
+            line = pipe_rx.recv() => {
+                match line {
+                    Some(line) => {
+                        if ws_sink.send(Message::Text(line.into())).await.is_err() {
+                            break;
                         }
                     }
+                    None => {
+                        read_task.abort();
+                        return Ok(());
+                    }
                 }
-                msg = ws_stream.next() => {
-                    let Some(Ok(msg)) = msg else { break; };
-                    if let Message::Text(text) = msg {
-                        let mut out = text.to_string();
-                        out.push('\n');
-                        if pipe_writer.write_all(out.as_bytes()).await.is_err() {
-                            read_task.abort();
-                            return Ok(());
-                        }
+            }
+            msg = ws_stream.next() => {
+                let Some(Ok(msg)) = msg else {
+                    log::warn!("IPC proxy backend WS dropped, closing pipe to waifu-node");
+                    break;
+                };
+                if let Message::Text(text) = msg {
+                    let mut out = text.to_string();
+                    out.push('\n');
+                    if pipe_writer.write_all(out.as_bytes()).await.is_err() {
+                        read_task.abort();
+                        return Ok(());
                     }
                 }
             }
         }
-
-        if read_task.is_finished() {
-            break;
-        }
-        log::warn!("IPC proxy backend disconnected, retrying: {node_url}");
-        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
+    // Drop pipe_writer (closes write end) so waifu-node sees EOF and exits.
+    drop(pipe_writer);
     read_task.abort();
     Ok(())
 }
