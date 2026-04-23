@@ -141,7 +141,7 @@ fn find_model_file(dir: &Path) -> Option<PathBuf> {
 }
 
 #[tauri::command]
-pub fn set_model_path(path: String, app: AppHandle) -> Result<(), String> {
+pub async fn set_model_path(path: String, app: AppHandle) -> Result<(), String> {
     let server = app.state::<Live2DServer>();
     let input = PathBuf::from(&path);
     let app_state = app.state::<AppState>();
@@ -194,7 +194,7 @@ pub fn get_current_model_url(app: AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn open_settings_window(app: AppHandle) -> Result<(), String> {
+pub async fn open_settings_window(app: AppHandle) -> Result<(), String> {
     use tauri::WebviewUrl;
     match app.get_webview_window("settings") {
         Some(win) => {
@@ -213,15 +213,30 @@ pub fn open_settings_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn open_live2d_window(app: AppHandle) -> Result<(), String> {
-    let win = app
-        .get_webview_window("live2d-preview")
-        .ok_or_else(|| "live2d-preview window not found".to_string())?;
-    win.show().map_err(|e| e.to_string())
+pub async fn open_live2d_window(app: AppHandle) -> Result<(), String> {
+    use tauri::WebviewUrl;
+    match app.get_webview_window("live2d-preview") {
+        Some(win) => {
+            win.show().map_err(|e| e.to_string())?;
+            win.set_focus().map_err(|e| e.to_string())
+        }
+        None => {
+            tauri::WebviewWindowBuilder::new(&app, "live2d-preview", WebviewUrl::App("live2d".into()))
+                .title("Live2D")
+                .inner_size(400.0, 600.0)
+                .transparent(true)
+                .decorations(false)
+                .shadow(false)
+                .always_on_top(true)
+                .build()
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+    }
 }
 
 #[tauri::command]
-pub fn close_live2d_window(app: AppHandle) -> Result<(), String> {
+pub async fn close_live2d_window(app: AppHandle) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("live2d-preview") {
         win.hide().map_err(|e| e.to_string())?;
     }

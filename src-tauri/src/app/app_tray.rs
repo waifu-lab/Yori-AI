@@ -34,6 +34,22 @@ fn open_or_create_window<R: Runtime>(
     }
 }
 
+fn open_live2d_window<R: Runtime>(app: &tauri::AppHandle<R>) {
+    if let Some(window) = app.get_webview_window("live2d-preview") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    } else {
+        let _ = WebviewWindowBuilder::new(app, "live2d-preview", WebviewUrl::App("live2d".into()))
+            .title("Live2D")
+            .inner_size(400.0, 600.0)
+            .transparent(true)
+            .decorations(false)
+            .shadow(false)
+            .always_on_top(true)
+            .build();
+    }
+}
+
 pub fn build_tray<R: Runtime>(app: &App<R>) -> Result<TrayIcon<R>> {
     let tray_menu = build_menu(app)?;
 
@@ -41,14 +57,7 @@ pub fn build_tray<R: Runtime>(app: &App<R>) -> Result<TrayIcon<R>> {
         .menu(&tray_menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
-                open_or_create_window(
-                    app,
-                    "live2d-preview",
-                    "/live2d",
-                    "Yori AI Dashboard",
-                    400.0,
-                    600.0,
-                );
+                open_live2d_window(app);
             }
             "settings" => {
                 open_or_create_window(app, "settings", "settings", "設定", 860.0, 600.0);

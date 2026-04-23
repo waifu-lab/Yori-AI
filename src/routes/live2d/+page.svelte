@@ -2,7 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import type { UnlistenFn } from '@tauri-apps/api/event';
 	import { listen } from '@tauri-apps/api/event';
-	import { getCurrentWindow } from '@tauri-apps/api/window';
+	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
 	import { onEvent } from '$lib/backend/ws';
 	import { getCurrentModelUrl, getModelPath, openSettingsWindow, setModelPath } from '$lib/commands';
 	import {
@@ -27,6 +27,28 @@
 
 	function hideWindow() {
 		getCurrentWindow().hide();
+	}
+
+	async function onDragMouseDown(e: MouseEvent) {
+		if (e.button !== 0) return;
+		const win = getCurrentWindow();
+		const pos = await win.outerPosition();
+		const startWinX = pos.x;
+		const startWinY = pos.y;
+		const startMouseX = e.screenX;
+		const startMouseY = e.screenY;
+
+		function onMouseMove(ev: MouseEvent) {
+			win.setPosition(new PhysicalPosition(startWinX + ev.screenX - startMouseX, startWinY + ev.screenY - startMouseY));
+		}
+
+		function onMouseUp() {
+			window.removeEventListener('mousemove', onMouseMove);
+			window.removeEventListener('mouseup', onMouseUp);
+		}
+
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
 	}
 
 	onMount(async () => {
@@ -86,6 +108,9 @@
 <div bind:this={container}></div>
 
 <aside class="sidebar">
+	<button class="icon-btn drag-btn" title="拖動視窗" onmousedown={onDragMouseDown} style="margin-top: auto;">
+		<span class="icon-[material-symbols--drag-pan-rounded]"></span>
+	</button>
 	<button class="icon-btn" title="設定" onclick={openSettings}>
 		<span class="icon-[material-symbols--settings-outline-rounded]"></span>
 	</button>
@@ -125,9 +150,6 @@
 		align-items: center;
 		padding: 8px 0;
 		gap: 6px;
-		background: rgba(20, 20, 30, 0.55);
-		backdrop-filter: blur(8px);
-		border-left: 1px solid rgba(255, 255, 255, 0.08);
 	}
 
 	.icon-btn {
@@ -135,7 +157,7 @@
 		height: 34px;
 		border-radius: 8px;
 		border: none;
-		background: transparent;
+		background: rgba(255, 255, 255, 0.05);;
 		color: rgba(255, 255, 255, 0.7);
 		cursor: pointer;
 		display: flex;
@@ -155,5 +177,13 @@
 	.close-btn:hover {
 		background: rgba(220, 60, 60, 0.4);
 		color: #fff;
+	}
+
+	.drag-btn {
+		cursor: grab;
+	}
+
+	.drag-btn:active {
+		cursor: grabbing;
 	}
 </style>
