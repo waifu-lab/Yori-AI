@@ -65,6 +65,7 @@
         "decorations": false,
         "shadow": false,
         "alwaysOnTop": true,
+        "skipTaskbar": true,
         "url": "live2d",
         "visible": false
       }
