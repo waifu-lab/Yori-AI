@@ -85,12 +85,6 @@ fn main() {
                 tauri::Manager::state::<backend::BackendWs>(handle).connect(url, handle.clone());
             }
 
-            // Auto-start waifu-node
-            if let Err(err) = tauri::Manager::state::<waifu_node::WaifuNodeManager>(handle).start()
-            {
-                log::warn!("waifu-node auto-start skipped: {err}");
-            }
-
             command::mouse_track::start_mouse_tracker(app.handle().clone());
             let _tray = app::build_tray(app)?;
             Ok(())
