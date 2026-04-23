@@ -27,6 +27,7 @@ fn main() {
             command::live2d_window::open_settings_window,
             command::live2d_window::open_live2d_window,
             command::live2d_window::close_live2d_window,
+            command::live2d_window::open_float_chat_window,
             command::live2d_window::read_file,
             command::live2d_window::set_model_path,
             command::live2d_window::get_current_model_url,

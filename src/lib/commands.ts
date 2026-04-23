@@ -12,6 +12,10 @@ export function closeLive2dWindow(): Promise<void> {
 	return invoke('close_live2d_window');
 }
 
+export function openFloatChatWindow(): Promise<void> {
+	return invoke('open_float_chat_window');
+}
+
 export function setModelPath(path: string): Promise<void> {
 	return invoke('set_model_path', { path });
 }

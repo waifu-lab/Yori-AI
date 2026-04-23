@@ -243,6 +243,26 @@ pub async fn close_live2d_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+pub async fn open_float_chat_window(app: AppHandle) -> Result<(), String> {
+    use tauri::WebviewUrl;
+    match app.get_webview_window("float-chat") {
+        Some(win) => {
+            win.show().map_err(|e| e.to_string())?;
+            win.set_focus().map_err(|e| e.to_string())
+        }
+        None => {
+            tauri::WebviewWindowBuilder::new(&app, "float-chat", WebviewUrl::App("float-chat".into()))
+                .title("Yori AI")
+                .inner_size(380.0, 640.0)
+                .min_inner_size(320.0, 480.0)
+                .build()
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+    }
+}
+
 #[derive(Serialize)]
 pub struct ReadFileResult {
     pub data: Vec<u8>,

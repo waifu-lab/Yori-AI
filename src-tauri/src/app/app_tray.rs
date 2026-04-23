@@ -7,9 +7,11 @@ use tauri::{
 pub fn build_menu<R: Runtime>(app: &App<R>) -> Result<Menu<R>> {
     let menu = Menu::new(app)?;
     let show = MenuItem::with_id(app, "show", "開啟主介面", true, Option::<&str>::None)?;
+    let chat = MenuItem::with_id(app, "chat", "開啟聊天", true, Option::<&str>::None)?;
     let settings = MenuItem::with_id(app, "settings", "設定", true, Option::<&str>::None)?;
     let quit = MenuItem::with_id(app, "quit", "離開", true, Option::<&str>::None)?;
     menu.append(&show)?;
+    menu.append(&chat)?;
     menu.append(&settings)?;
     menu.append(&quit)?;
     Ok(menu)
@@ -58,6 +60,9 @@ pub fn build_tray<R: Runtime>(app: &App<R>) -> Result<TrayIcon<R>> {
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
                 open_live2d_window(app);
+            }
+            "chat" => {
+                open_or_create_window(app, "chat", "chat", "對話介面", 860.0, 600.0);
             }
             "settings" => {
                 open_or_create_window(app, "settings", "settings", "設定", 860.0, 600.0);

@@ -4,7 +4,7 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
 	import { onEvent } from '$lib/backend/ws';
-	import { getCurrentModelUrl, getModelPath, openSettingsWindow, setModelPath } from '$lib/commands';
+	import { getCurrentModelUrl, getModelPath, openFloatChatWindow, openSettingsWindow, setModelPath } from '$lib/commands';
 	import {
 		destroyApp,
 		initApp,
@@ -23,6 +23,10 @@
 
 	function openSettings() {
 		openSettingsWindow().catch(console.error);
+	}
+
+	function openChat() {
+		openFloatChatWindow().catch(console.error);
 	}
 
 	function hideWindow() {
@@ -125,6 +129,9 @@
 <aside class="sidebar">
 	<button class="icon-btn drag-btn" title="拖動視窗" onmousedown={onDragMouseDown} style="margin-top: auto;">
 		<span class="icon-[material-symbols--drag-pan-rounded]"></span>
+	</button>
+	<button class="icon-btn" title="開啟聊天" onclick={openChat}>
+		<span class="icon-[material-symbols--chat-outline-rounded]"></span>
 	</button>
 	<button class="icon-btn" title="設定" onclick={openSettings}>
 		<span class="icon-[material-symbols--settings-outline-rounded]"></span>
