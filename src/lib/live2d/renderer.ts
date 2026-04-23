@@ -11,6 +11,7 @@ let currentModel: Live2DModelType | null = null;
 let modelNaturalWidth = 0;
 let modelNaturalHeight = 0;
 let initialized = false;
+let dprCleanup: (() => void) | null = null;
 
 /** Whether the loaded model has a formal LipSync parameter group. */
 let hasNativeLipSync = false;
@@ -41,26 +42,64 @@ export async function initApp(container: HTMLElement): Promise<Application> {
 	if (app) return app;
 
 	app = new Application_();
+	const { w: initW, h: initH } = logicalSize();
 	await app.init({
-		resizeTo: window,
+		width: initW,
+		height: initH,
 		preference: 'webgl',
 		backgroundAlpha: 0,
 		autoDensity: true,
 		resolution: window.devicePixelRatio || 1
 	});
 
-	// Reposition model whenever the window/canvas is resized
-	window.addEventListener('resize', repositionModel);
+	window.addEventListener('resize', handleResize);
+
+	watchDevicePixelRatio();
 
 	container.appendChild(app.canvas);
 	return app;
 }
 
+function handleResize() {
+	if (!app) return;
+	const { w, h } = logicalSize();
+	app.renderer.resize(w, h);
+	repositionModel();
+}
+
+function watchDevicePixelRatio() {
+	const dpr = window.devicePixelRatio;
+	const mql = window.matchMedia(`(resolution: ${dpr}dppx)`);
+
+	function onChange() {
+		const newDpr = window.devicePixelRatio || 1;
+
+		if (app) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(app.renderer as unknown as { resolution: number }).resolution = newDpr;
+			const { w, h } = logicalSize();
+			app.renderer.resize(w, h);
+		}
+		repositionModel();
+		dprCleanup?.();
+		dprCleanup = null;
+		watchDevicePixelRatio();
+	}
+	mql.addEventListener('change', onChange);
+	dprCleanup = () => mql.removeEventListener('change', onChange);
+}
+
+function logicalSize() {
+	const dpr = window.devicePixelRatio || 1;
+	return { w: window.innerWidth / dpr, h: window.innerHeight / dpr };
+}
+
 function repositionModel() {
 	if (!app || !currentModel || modelNaturalWidth === 0 || modelNaturalHeight === 0) return;
-	const scale = Math.min((app.screen.width / modelNaturalWidth) * 0.8, (app.screen.height / modelNaturalHeight) * 0.8);
+	const { w, h } = logicalSize();
+	const scale = Math.min((w / modelNaturalWidth) * 0.9, (h / modelNaturalHeight) * 0.9);
 	currentModel.scale.set(scale);
-	currentModel.position.set(app.screen.width / 2, app.screen.height / 2);
+	currentModel.position.set(w / 2, h / 2);
 }
 
 /**
@@ -195,7 +234,9 @@ function cancelLipsync(): void {
 }
 
 export function destroyApp(): void {
-	window.removeEventListener('resize', repositionModel);
+	window.removeEventListener('resize', handleResize);
+	dprCleanup?.();
+	dprCleanup = null;
 	cancelLipsync();
 	stopAudio();
 	currentModel = null;

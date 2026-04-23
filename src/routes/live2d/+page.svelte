@@ -35,14 +35,29 @@
 		const pos = await win.outerPosition();
 		const startWinX = pos.x;
 		const startWinY = pos.y;
-		const startMouseX = e.screenX;
-		const startMouseY = e.screenY;
+		const dpr = window.devicePixelRatio || 1;
+		const startMouseX = e.screenX * dpr;
+		const startMouseY = e.screenY * dpr;
+
+		let rafId: number | null = null;
+		let pendingX = startWinX;
+		let pendingY = startWinY;
 
 		function onMouseMove(ev: MouseEvent) {
-			win.setPosition(new PhysicalPosition(startWinX + ev.screenX - startMouseX, startWinY + ev.screenY - startMouseY));
+			pendingX = Math.round(startWinX + ev.screenX * dpr - startMouseX);
+			pendingY = Math.round(startWinY + ev.screenY * dpr - startMouseY);
+			if (rafId !== null) return;
+			rafId = requestAnimationFrame(() => {
+				rafId = null;
+				win.setPosition(new PhysicalPosition(pendingX, pendingY));
+			});
 		}
 
 		function onMouseUp() {
+			if (rafId !== null) {
+				cancelAnimationFrame(rafId);
+				rafId = null;
+			}
 			window.removeEventListener('mousemove', onMouseMove);
 			window.removeEventListener('mouseup', onMouseUp);
 		}
@@ -157,7 +172,7 @@
 		height: 34px;
 		border-radius: 8px;
 		border: none;
-		background: rgba(255, 255, 255, 0.05);;
+		background: rgba(255, 255, 255, 0.05);
 		color: rgba(255, 255, 255, 0.7);
 		cursor: pointer;
 		display: flex;
