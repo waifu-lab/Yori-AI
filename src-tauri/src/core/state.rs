@@ -1,6 +1,7 @@
 use parking_lot::Mutex;
 
 pub const STORE_KEY_BACKEND_URL: &str = "backend_url";
+pub const STORE_KEY_LIVE2D_MODEL_PATH: &str = "live2d_model_path";
 const DEFAULT_BACKEND_URL: &str = "ws://127.0.0.1:8765";
 
 /// In-memory runtime state shared across Tauri commands.
@@ -12,6 +13,8 @@ pub struct AppState {
     /// Whether the currently loaded Live2D model lacks a native LipSync parameter
     /// group, so the backend should compute and return viseme data.
     pub need_backend_lipsync: Mutex<bool>,
+    /// Last used Live2D model path. Persisted via tauri-plugin-store.
+    pub live2d_model_path: Mutex<Option<String>>,
 }
 
 impl AppState {
@@ -20,6 +23,7 @@ impl AppState {
             conversation_id: Mutex::new(None),
             backend_url: Mutex::new(DEFAULT_BACKEND_URL.to_string()),
             need_backend_lipsync: Mutex::new(false),
+            live2d_model_path: Mutex::new(None),
         }
     }
 
@@ -45,6 +49,14 @@ impl AppState {
 
     pub fn get_need_backend_lipsync(&self) -> bool {
         *self.need_backend_lipsync.lock()
+    }
+
+    pub fn get_live2d_model_path(&self) -> Option<String> {
+        self.live2d_model_path.lock().clone()
+    }
+
+    pub fn set_live2d_model_path(&self, path: Option<String>) {
+        *self.live2d_model_path.lock() = path;
     }
 }
 

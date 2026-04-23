@@ -20,6 +20,10 @@ export function getCurrentModelUrl(): Promise<string | null> {
 	return invoke('get_current_model_url');
 }
 
+export function getModelPath(): Promise<string | null> {
+	return invoke('get_model_path');
+}
+
 type CommandResult<T> = {
 	data: T;
 	err: string;

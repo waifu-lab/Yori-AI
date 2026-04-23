@@ -4,7 +4,10 @@
   "description": "enables the default permissions",
   "windows": [
     "main",
-    "live2d-preview"
+    "live2d-preview",
+    "settings",
+    "float-chat",
+    "chat"
   ],
   "permissions": [
     "core:default",

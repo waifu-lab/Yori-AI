@@ -11,6 +11,8 @@ use parking_lot::RwLock;
 use percent_encoding::{NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_store::StoreExt;
+use crate::core::state::{AppState, STORE_KEY_LIVE2D_MODEL_PATH};
 
 pub struct Live2DServer {
     pub port: u16,
@@ -142,6 +144,7 @@ fn find_model_file(dir: &Path) -> Option<PathBuf> {
 pub fn set_model_path(path: String, app: AppHandle) -> Result<(), String> {
     let server = app.state::<Live2DServer>();
     let input = PathBuf::from(&path);
+    let app_state = app.state::<AppState>();
 
     let model_path = if input.is_dir() {
         find_model_file(&input).ok_or_else(|| format!("No model JSON found in: {path}"))?
@@ -169,7 +172,19 @@ pub fn set_model_path(path: String, app: AppHandle) -> Result<(), String> {
 
     *server.last_model_url.write() = Some(model_url.clone());
 
+    // Persist the original path so it can be restored on next launch
+    app_state.set_live2d_model_path(Some(path.clone()));
+    if let Ok(store) = app.store("settings.json") {
+        store.set(STORE_KEY_LIVE2D_MODEL_PATH, path);
+        let _ = store.save();
+    }
+
     app.emit("load-model", model_url).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_model_path(app: AppHandle) -> Option<String> {
+    app.state::<AppState>().get_live2d_model_path()
 }
 
 #[tauri::command]

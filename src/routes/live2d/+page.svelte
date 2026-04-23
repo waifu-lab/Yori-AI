@@ -4,7 +4,7 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 	import { onEvent } from '$lib/backend/ws';
-	import { getCurrentModelUrl, openSettingsWindow } from '$lib/commands';
+	import { getCurrentModelUrl, getModelPath, openSettingsWindow, setModelPath } from '$lib/commands';
 	import {
 		destroyApp,
 		initApp,
@@ -44,7 +44,14 @@
 
 		await initApp(container);
 
-		const savedUrl = await getCurrentModelUrl();
+		let savedUrl = await getCurrentModelUrl();
+		if (!savedUrl) {
+			const savedPath = await getModelPath();
+			if (savedPath) {
+				await setModelPath(savedPath);
+				savedUrl = await getCurrentModelUrl();
+			}
+		}
 		if (savedUrl) {
 			await loadModelFromUrl(savedUrl);
 		}
@@ -135,7 +142,9 @@
 		align-items: center;
 		justify-content: center;
 		font-size: 18px;
-		transition: background 0.15s, color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s;
 	}
 
 	.icon-btn:hover {

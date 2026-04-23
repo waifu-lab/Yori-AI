@@ -1,8 +1,7 @@
 use tauri::{
-    App, Manager, Result, Runtime,
+    App, Manager, Result, Runtime, WebviewUrl, WebviewWindowBuilder,
     menu::{Menu, MenuItem},
     tray::{TrayIcon, TrayIconBuilder},
-    WebviewUrl, WebviewWindowBuilder,
 };
 
 pub fn build_menu<R: Runtime>(app: &App<R>) -> Result<Menu<R>> {
@@ -42,7 +41,14 @@ pub fn build_tray<R: Runtime>(app: &App<R>) -> Result<TrayIcon<R>> {
         .menu(&tray_menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
-                open_or_create_window(app, "main", "/", "Yori AI Dashboard", 800.0, 600.0);
+                open_or_create_window(
+                    app,
+                    "live2d-preview",
+                    "/live2d",
+                    "Yori AI Dashboard",
+                    400.0,
+                    600.0,
+                );
             }
             "settings" => {
                 open_or_create_window(app, "settings", "settings", "設定", 860.0, 600.0);

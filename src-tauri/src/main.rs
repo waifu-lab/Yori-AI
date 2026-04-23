@@ -30,6 +30,7 @@ fn main() {
             command::live2d_window::read_file,
             command::live2d_window::set_model_path,
             command::live2d_window::get_current_model_url,
+            command::live2d_window::get_model_path,
             command::live2d_window::list_expressions,
             // backend
             command::backend::backend_connect,
@@ -68,6 +69,13 @@ fn main() {
                     tauri::Manager::state::<waifu_node::WaifuNodeManager>(handle).set_backend_url(
                         tauri::Manager::state::<core::state::AppState>(handle).get_backend_url(),
                     );
+                }
+                if let Some(model_path) = store
+                    .get(core::state::STORE_KEY_LIVE2D_MODEL_PATH)
+                    .and_then(|v| v.as_str().map(str::to_owned))
+                {
+                    tauri::Manager::state::<core::state::AppState>(handle)
+                        .set_live2d_model_path(Some(model_path));
                 }
             }
 

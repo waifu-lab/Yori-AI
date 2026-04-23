@@ -14,9 +14,10 @@
       {
         "label": "main",
         "title": "Yori AI Dashboard",
-        "width": 800,
-        "height": 600,
+        "width": 1,
+        "height": 1,
         "resizable": true,
+        "transparent": true,
         "fullscreen": false
       },
       {

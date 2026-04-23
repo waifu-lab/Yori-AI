@@ -1,5 +1,10 @@
 <script lang="ts">
-</script>
+	import { getCurrentWindow } from '@tauri-apps/api/window';
+	import { onMount } from 'svelte';
+	import { openLive2dWindow } from '$lib/commands';
 
-<p>todo</p>
-<a href="/dev/live2d">Live2D Preview</a>
+	onMount(async () => {
+		await openLive2dWindow().catch(console.error);
+		await getCurrentWindow().hide().catch(console.error);
+	});
+</script>
