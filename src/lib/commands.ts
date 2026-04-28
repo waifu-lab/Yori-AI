@@ -71,3 +71,27 @@ export function agentIsInstalled(): Promise<boolean> {
 export function setLipsyncMode(needBackendLipsync: boolean): Promise<void> {
 	return invoke('live2d_set_lipsync_mode', { needBackendLipsync });
 }
+
+export function vadStart(): Promise<void> {
+	return invoke('vad_start');
+}
+
+export function vadStop(): Promise<void> {
+	return invoke('vad_stop');
+}
+
+export function vadStatus(): Promise<boolean> {
+	return invoke('vad_status');
+}
+
+export function listInputDevices(): Promise<string[]> {
+	return invoke('list_input_devices');
+}
+
+export function vadSetDevice(device: string | null): Promise<void> {
+	return invoke('vad_set_device', { device });
+}
+
+export function vadGetDevice(): Promise<string | null> {
+	return invoke('vad_get_device');
+}

@@ -11,9 +11,12 @@ dependencies = [
  "base64 0.22.1",
  "bitflags 2.11.0",
  "chrono",
+ "cpal",
  "crossbeam-channel",
+ "earshot",
  "fern",
  "futures-util",
+ "hound",
  "log",
  "notify",
  "parking_lot 0.12.5",
@@ -1943,6 +1946,12 @@ name = "dyn-clone"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
+
+[[package]]
+name = "earshot"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7984231f8b4c72eb3b88c70040dc1e4ff6803fa9169e93c0ac465942d74fa36a"
 
 [[package]]
 name = "either"

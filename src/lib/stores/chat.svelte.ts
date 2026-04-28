@@ -1,5 +1,5 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
-import { onChunk, onDone, onError } from '$lib/backend/ws';
+import { onChunk, onDone, onError, onTranscript } from '$lib/backend/ws';
 import type { ChatEntry } from '$lib/backend/types';
 
 export type { ChatEntry };
@@ -10,7 +10,11 @@ class ChatStore {
 	private unlisteners: UnlistenFn[] = [];
 
 	async init() {
-		const [unChunk, unDone, unErr] = await Promise.all([
+		const [unTranscript, unChunk, unDone, unErr] = await Promise.all([
+			onTranscript((msg) => {
+				this.addUserMessage(msg.request_id, msg.content);
+			}),
+
 			onChunk((msg) => {
 				const aid = msg.request_id + '-a';
 				const entry = this.messages.find((m) => m.id === aid);
@@ -47,7 +51,7 @@ class ChatStore {
 			})
 		]);
 
-		this.unlisteners = [unChunk, unDone, unErr];
+		this.unlisteners = [unTranscript, unChunk, unDone, unErr];
 	}
 
 	destroy() {

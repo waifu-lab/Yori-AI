@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
@@ -30,13 +32,14 @@ pub struct WsActor {
     url: String,
     app: AppHandle,
     rx: mpsc::UnboundedReceiver<ClientMsg>,
+    connected: Arc<AtomicBool>,
 }
 
 impl WsActor {
-    pub fn spawn(url: String, app: AppHandle) -> WsHandle {
+    pub fn spawn(url: String, app: AppHandle, connected: Arc<AtomicBool>) -> WsHandle {
         let (tx, rx) = mpsc::unbounded_channel();
         let handle = WsHandle { tx: tx.clone() };
-        let actor = WsActor { url, app, rx };
+        let actor = WsActor { url, app, rx, connected };
         tauri::async_runtime::spawn(actor.run());
         handle
     }
@@ -48,6 +51,7 @@ impl WsActor {
         loop {
             match connect_async(&url).await {
                 Ok((ws_stream, _)) => {
+                    self.connected.store(true, Ordering::Relaxed);
                     delay = RECONNECT_INITIAL_MS;
                     if let Some(mgr) = self.app.try_state::<WaifuNodeManager>() {
                         if let Err(e) = mgr.start() {
@@ -77,6 +81,7 @@ impl WsActor {
                     }
 
                     self.app.emit("backend-disconnected", ()).ok();
+                    self.connected.store(false, Ordering::Relaxed);
                 }
                 Err(e) => {
                     log::warn!("backend WS connect failed: {e}, retry in {delay}ms");
@@ -97,6 +102,9 @@ impl WsActor {
             ServerMsg::Connected(c) => {
                 self.app.emit("backend-connected", c).ok();
             }
+            ServerMsg::Transcript(t) => {
+                self.app.emit("chat-transcript", t).ok();
+            }
             ServerMsg::Chunk(c) => {
                 self.app.emit("chat-chunk", c).ok();
             }
@@ -115,21 +123,24 @@ impl WsActor {
 
 pub struct BackendWs {
     handle: Mutex<Option<WsHandle>>,
+    connected: Arc<AtomicBool>,
 }
 
 impl BackendWs {
     pub fn new() -> Self {
         Self {
             handle: Mutex::new(None),
+            connected: Arc::new(AtomicBool::new(false)),
         }
     }
 
     pub fn connect(&self, url: String, app: AppHandle) {
-        let h = WsActor::spawn(url, app);
+        let h = WsActor::spawn(url, app, Arc::clone(&self.connected));
         *self.handle.lock() = Some(h);
     }
 
     pub fn disconnect(&self) {
+        self.connected.store(false, Ordering::Relaxed);
         *self.handle.lock() = None;
     }
 
@@ -139,7 +150,8 @@ impl BackendWs {
         h.tx.send(msg).map_err(|e| e.to_string())
     }
 
+    /// Returns true only when the WebSocket TCP connection is actually established.
     pub fn is_connected(&self) -> bool {
-        self.handle.lock().is_some()
+        self.connected.load(Ordering::Relaxed)
     }
 }

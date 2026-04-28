@@ -13,6 +13,7 @@ fn main() {
         .expect("failed to start Live2D file server");
 
     let audio_player = audio::AudioPlayer::new().expect("failed to init audio player");
+    let vad_manager = audio::VadManager::new();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -22,6 +23,7 @@ fn main() {
         .manage(waifu_node::WaifuNodeManager::new())
         .manage(core::state::AppState::new())
         .manage(audio_player)
+        .manage(vad_manager)
         .invoke_handler(tauri::generate_handler![
             // live2d
             command::live2d_window::open_settings_window,
@@ -48,6 +50,13 @@ fn main() {
             command::audio::audio_play,
             command::audio::audio_stop,
             command::audio::audio_set_volume,
+            // vad
+            command::audio::vad_start,
+            command::audio::vad_stop,
+            command::audio::vad_status,
+            command::audio::list_input_devices,
+            command::audio::vad_set_device,
+            command::audio::vad_get_device,
             // waifu-node
             command::waifu_node::waifu_node_install,
             command::waifu_node::waifu_node_start,

@@ -22,6 +22,12 @@ export interface VoiceMessage {
 
 export type ClientMessage = ChatMessage | VoiceMessage;
 
+export interface TranscriptMessage {
+	type: 'transcript';
+	request_id: string;
+	content: string;
+}
+
 export interface ChunkMessage {
 	type: 'chunk';
 	request_id: string;
@@ -66,7 +72,7 @@ export interface ErrorMessage {
 	message: string;
 }
 
-export type ServerMessage = ChunkMessage | DoneMessage | EventMessage | ErrorMessage;
+export type ServerMessage = TranscriptMessage | ChunkMessage | DoneMessage | EventMessage | ErrorMessage;
 
 export interface ChatEntry {
 	id: string;

@@ -5,6 +5,7 @@
 	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
 	import { onEvent } from '$lib/backend/ws';
 	import { getCurrentModelUrl, getModelPath, openFloatChatWindow, openSettingsWindow, setModelPath } from '$lib/commands';
+	import { vadStore } from '$lib/stores/vad.svelte';
 	import {
 		destroyApp,
 		initApp,
@@ -71,6 +72,8 @@
 	}
 
 	onMount(async () => {
+		await vadStore.init();
+
 		function loadScript(src: string): Promise<void> {
 			return new Promise((resolve, reject) => {
 				const script = document.createElement('script');
@@ -120,6 +123,7 @@
 		unlisten?.();
 		unlistenCursor?.();
 		unlistenEvent?.();
+		vadStore.stop();
 		destroyApp();
 	});
 </script>
@@ -133,8 +137,14 @@
 	<button class="icon-btn" title="開啟聊天" onclick={openChat}>
 		<span class="icon-[material-symbols--chat-outline-rounded]"></span>
 	</button>
-	<button class="icon-btn" title="對話" onclick={() => setExpression('talk')}>
-		<span class="icon-[material-symbols--mic]"></span>
+	<button
+		class="icon-btn"
+		class:vad-active={vadStore.active}
+		title={vadStore.active ? '停止語音偵測' : '開始語音偵測'}
+		onclick={() => vadStore.toggle()}
+		disabled={vadStore.busy}
+	>
+		<span class={vadStore.active ? 'icon-[material-symbols--mic]' : 'icon-[material-symbols--mic-off-outline-rounded]'}></span>
 	</button>
 	<button class="icon-btn" title="設定" onclick={openSettings}>
 		<span class="icon-[material-symbols--settings-outline-rounded]"></span>
@@ -197,6 +207,15 @@
 	.icon-btn:hover {
 		background: rgba(255, 255, 255, 0.12);
 		color: #fff;
+	}
+
+	.icon-btn.vad-active {
+		background: rgba(239, 68, 68, 0.25);
+		color: rgb(239, 68, 68);
+	}
+
+	.icon-btn.vad-active:hover {
+		background: rgba(239, 68, 68, 0.4);
 	}
 
 	.close-btn:hover {

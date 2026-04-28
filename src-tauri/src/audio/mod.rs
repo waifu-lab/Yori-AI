@@ -6,6 +6,9 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD as B64;
 use rodio::{Decoder, OutputStream, Sink};
 
+pub mod vad;
+pub use vad::{VadManager, list_input_devices};
+
 enum AudioCmd {
     Play(Vec<u8>),
     Stop,

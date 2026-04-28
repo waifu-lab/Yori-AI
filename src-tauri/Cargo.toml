@@ -45,6 +45,9 @@ futures-util = "0.3"
 # audio playback
 rodio = "0.20"
 base64 = "0.22"
+earshot = "1"
+cpal = "0.15"
+hound = "3"
 
 # http client (GitHub release download)
 reqwest = { version = "0.12", features = ["json", "stream"] }

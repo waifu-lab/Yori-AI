@@ -98,6 +98,7 @@ pub fn backend_send_voice(
         request_id: request_id.clone(),
         audio: audio_b64,
         format: "webm".to_string(),
+        live2d: Some(true),
     }))?;
     Ok(request_id)
 }
