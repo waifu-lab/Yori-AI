@@ -86,11 +86,11 @@ Let me know if you need more details.`}
 			<Chat.Messages>
 				<div class="flex flex-col gap-6">
 					<Chat.UserBubble content="Hello Yori! Can you introduce yourself?" />
-					<Chat.AiBubble
+					<Chat.AiResult
 						content="Hi! I'm Yori, an AI assistant built with the Etheric Control design system. I'm here to help you with anything you need — from coding questions to creative writing. What would you like to explore today?"
 					/>
 					<Chat.UserBubble content="That sounds great! Can you help me write a Svelte component?" />
-					<Chat.AiBubble isStreaming content="Of course! Let me put together an example for you..." />
+					<Chat.AiResult isStreaming content="Of course! Let me put together an example for you..." />
 				</div>
 			</Chat.Messages>
 			<Chat.Input>

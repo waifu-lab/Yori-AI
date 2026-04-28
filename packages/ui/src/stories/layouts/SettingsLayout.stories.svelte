@@ -1,6 +1,6 @@
 <script module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
-	import SettingsLayout from '$lib/layouts/SettingsLayout.svelte';
+	import SettingsLayout from '$lib/layouts/SettingsLayout/SettingsLayout.svelte';
 	import SettingCard from '$lib/molecules/setting/SettingCard.svelte';
 	import Button from '$lib/atoms/Button.svelte';
 	import Select from '$lib/atoms/Select.svelte';
@@ -16,7 +16,7 @@
 
 <Story name="General Settings" asChild>
 	<div class="bg-canvas min-h-[600px]">
-		<SettingsLayout title="Settings" description="Configure your Yori AI experience.">
+		<SettingsLayout title="Settings">
 			<p class="text-muted-foreground text-xs font-semibold tracking-widest uppercase">General</p>
 
 			<SettingCard

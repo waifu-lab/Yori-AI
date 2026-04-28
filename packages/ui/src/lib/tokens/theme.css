@@ -13,9 +13,9 @@
 
 @theme {
 	/* Colors */
-	--color-primary: #2b2ed4;
+	--color-primary: #2667ff;
 	--color-secondary: #cf2d56;
-	--color-primary-bloom: color-mix(in srgb, #2b2ed4 12%, transparent);
+	--color-primary-bloom: color-mix(in srgb, #2667ff 12%, transparent);
 
 	--color-canvas: #ffffff; /* bg-canvas    — page bg      */
 	--color-surface: #f7f7f7; /* bg-surface   — container    */
@@ -33,7 +33,7 @@
 	--color-border: rgba(0, 0, 0, 0.14);
 	--color-border-hover: rgba(0, 0, 0, 0.35);
 
-	--color-ring: #2b2ed4; /* ring-ring for focus rings */
+	--color-ring: #2667ff; /* ring-ring for focus rings */
 
 	/* Shadows */
 	--shadow-float: 0px 24px 48px rgba(0, 0, 0, 0.06);
@@ -106,7 +106,7 @@
 	--color-muted-foreground: rgba(255, 255, 255, 0.55);
 	--color-faint: rgba(255, 255, 255, 0.28);
 
-	--color-primary-bloom: color-mix(in srgb, #2b2ed4 8%, transparent);
+	--color-primary-bloom: color-mix(in srgb, #2667ff 8%, transparent);
 
 	--color-border: rgba(255, 255, 255, 0.14);
 	--color-border-hover: rgba(255, 255, 255, 0.35);

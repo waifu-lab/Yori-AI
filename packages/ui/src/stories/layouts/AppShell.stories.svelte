@@ -1,11 +1,11 @@
 <script module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
-	import AppShell from '$lib/layouts/AppShell.svelte';
+	import * as AppShell from '$lib/layouts/AppShell/index.js';
 	import Sidebar from '$lib/molecules/Sidebar.svelte';
 
 	const { Story } = defineMeta({
 		title: 'Layouts/AppShell',
-		component: AppShell,
+		component: AppShell.Root,
 		tags: ['autodocs']
 	});
 
@@ -19,8 +19,8 @@
 
 <Story name="Default" asChild>
 	<div class="h-[600px] w-full">
-		<AppShell>
-			{#snippet sidebar()}
+		<AppShell.Root>
+			<AppShell.Sidebar>
 				<Sidebar items={navItems} currentPath="/project">
 					{#snippet header()}
 						<div class="flex items-center gap-3 px-1 py-2">
@@ -48,9 +48,9 @@
 						</div>
 					{/snippet}
 				</Sidebar>
-			{/snippet}
-			{#snippet children()}
-				<div class="flex-1 overflow-y-auto p-8">
+			</AppShell.Sidebar>
+			<AppShell.Content>
+				<div class="overflow-y-auto p-8">
 					<h1 class="text-foreground mb-2 text-[32px] font-extrabold tracking-[-0.05em]">Projects</h1>
 					<p class="text-muted-foreground text-sm">Manage your AI personas and projects here.</p>
 					<div class="mt-8 grid grid-cols-2 gap-4">
@@ -62,7 +62,7 @@
 						{/each}
 					</div>
 				</div>
-			{/snippet}
-		</AppShell>
+			</AppShell.Content>
+		</AppShell.Root>
 	</div>
 </Story>

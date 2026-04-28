@@ -133,6 +133,9 @@
 	<button class="icon-btn" title="開啟聊天" onclick={openChat}>
 		<span class="icon-[material-symbols--chat-outline-rounded]"></span>
 	</button>
+	<button class="icon-btn" title="對話" onclick={() => setExpression('talk')}>
+		<span class="icon-[material-symbols--mic]"></span>
+	</button>
 	<button class="icon-btn" title="設定" onclick={openSettings}>
 		<span class="icon-[material-symbols--settings-outline-rounded]"></span>
 	</button>
