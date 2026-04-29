@@ -146,6 +146,17 @@ export function needsBackendLipsync(): boolean {
 	return !hasNativeLipSync;
 }
 
+/** Returns the list of expression names defined by the currently loaded model. */
+export function getExpressionNames(): string[] {
+	if (!currentModel) return [];
+	const mgr = (currentModel as Live2DModelType & { internalModel?: { motionManager?: { expressionManager?: { definitions: { Name?: string; name?: string }[] } } } }).internalModel?.motionManager?.expressionManager;
+	if (!mgr) return [];
+	// definitions is ExpressionSpec[], each has a Name field (Cubism4) or name field (Cubism2)
+	return (mgr.definitions as { Name?: string; name?: string }[])
+		.map((d) => d.Name ?? d.name ?? '')
+		.filter(Boolean);
+}
+
 export function setExpression(name: string): void {
 	if (!currentModel) return;
 	currentModel.expression(name);

@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
-import type { ChunkMessage, ConnectedMessage, DoneMessage, EventMessage, ErrorMessage, TranscriptMessage } from './types';
+import type { ChunkMessage, ConnectedMessage, DoneMessage, EventMessage, ErrorMessage, Live2dSyncAckMessage, TranscriptMessage } from './types';
 
 export function sendChat(content: string, live2d?: boolean): Promise<string> {
 	return invoke<string>('backend_send_chat', { content, live2d });
@@ -37,4 +37,12 @@ export function onConnected(cb: (msg: ConnectedMessage) => void): Promise<Unlist
 
 export function onDisconnected(cb: () => void): Promise<UnlistenFn> {
 	return listen('backend-disconnected', () => cb());
+}
+
+export function sendLive2dSync(expressions: string[]): Promise<void> {
+	return invoke('backend_send_live2d_sync', { expressions });
+}
+
+export function onLive2dSyncAck(cb: (msg: Live2dSyncAckMessage) => void): Promise<UnlistenFn> {
+	return listen<Live2dSyncAckMessage>('backend-live2dsync-ack', (e) => cb(e.payload));
 }

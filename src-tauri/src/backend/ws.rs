@@ -102,6 +102,9 @@ impl WsActor {
             ServerMsg::Connected(c) => {
                 self.app.emit("backend-connected", c).ok();
             }
+            ServerMsg::Live2dsyncAck(a) => {
+                self.app.emit("backend-live2dsync-ack", a).ok();
+            }
             ServerMsg::Transcript(t) => {
                 self.app.emit("chat-transcript", t).ok();
             }

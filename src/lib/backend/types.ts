@@ -1,7 +1,6 @@
 export interface ConnectedMessage {
 	type: 'connected';
 	session_token: string;
-	emotions?: string[];
 }
 
 export interface ChatMessage {
@@ -20,7 +19,7 @@ export interface VoiceMessage {
 	format: 'webm';
 }
 
-export type ClientMessage = ChatMessage | VoiceMessage;
+export type ClientMessage = ChatMessage | VoiceMessage | Live2dSyncMessage;
 
 export interface TranscriptMessage {
 	type: 'transcript';
@@ -54,7 +53,17 @@ export interface EmotionEventMessage {
 export interface AudioEventMessage {
 	type: 'event';
 	event: 'audio';
-	data: { audio: string; format: string }; // audio is base64
+	data: { audio: string; format: string; duration_ms?: number; emotion?: string };
+}
+
+export interface Live2dSyncMessage {
+	type: 'live2dsync';
+	expressions: string[];
+}
+
+export interface Live2dSyncAckMessage {
+	type: 'live2dsync_ack';
+	count: number;
 }
 
 export interface LipsyncEventMessage {

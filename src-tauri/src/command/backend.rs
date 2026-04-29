@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::backend::{
     BackendWs,
-    types::{ChatMsg, ClientMsg, VoiceMsg},
+    types::{ChatMsg, ClientMsg, Live2dSyncMsg, VoiceMsg},
 };
 
 use crate::core::state::{AppState, STORE_KEY_BACKEND_URL};
@@ -83,6 +83,14 @@ pub fn backend_send_chat(
 #[tauri::command]
 pub fn live2d_set_lipsync_mode(need_backend_lipsync: bool, state: State<AppState>) {
     state.set_need_backend_lipsync(need_backend_lipsync);
+}
+
+#[tauri::command]
+pub fn backend_send_live2d_sync(
+    expressions: Vec<String>,
+    ws: State<BackendWs>,
+) -> Result<(), String> {
+    ws.send(ClientMsg::Live2dsync(Live2dSyncMsg { expressions }))
 }
 
 #[tauri::command]

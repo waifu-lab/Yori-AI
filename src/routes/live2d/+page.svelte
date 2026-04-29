@@ -3,11 +3,12 @@
 	import type { UnlistenFn } from '@tauri-apps/api/event';
 	import { listen } from '@tauri-apps/api/event';
 	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
-	import { onEvent } from '$lib/backend/ws';
+	import { onEvent, sendLive2dSync } from '$lib/backend/ws';
 	import { getCurrentModelUrl, getModelPath, openFloatChatWindow, openSettingsWindow, setModelPath } from '$lib/commands';
 	import { vadStore } from '$lib/stores/vad.svelte';
 	import {
 		destroyApp,
+		getExpressionNames,
 		initApp,
 		loadModelFromUrl,
 		needsBackendLipsync,
@@ -98,10 +99,12 @@
 		}
 		if (savedUrl) {
 			await loadModelFromUrl(savedUrl);
+			sendLive2dSync(getExpressionNames()).catch(console.warn);
 		}
 
 		unlisten = await listen<string>('load-model', async (event) => {
 			await loadModelFromUrl(event.payload);
+			sendLive2dSync(getExpressionNames()).catch(console.warn);
 		});
 
 		unlistenCursor = await listen<{ x: number; y: number }>('cursor-pos', (event) => {
