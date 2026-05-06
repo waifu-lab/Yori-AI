@@ -4,7 +4,7 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
 	import { onEvent, sendLive2dSync } from '$lib/backend/ws';
-	import { getCurrentModelUrl, getModelPath, openFloatChatWindow, openSettingsWindow, setModelPath } from '$lib/commands';
+	import { getCurrentModelUrl, getLive2dTransform, getModelPath, openFloatChatWindow, openSettingsWindow, setModelPath } from '$lib/commands';
 	import { vadStore } from '$lib/stores/vad.svelte';
 	import {
 		attachLipsyncToLast,
@@ -15,13 +15,15 @@
 		needsBackendLipsync,
 		playAudio,
 		setExpression,
-		setFocus
+		setFocus,
+		setModelTransform
 	} from '$lib/live2d/renderer';
 
 	let container: HTMLDivElement;
 	let unlisten: (() => void) | null = null;
 	let unlistenCursor: UnlistenFn | null = null;
 	let unlistenEvent: UnlistenFn | null = null;
+	let unlistenTransform: UnlistenFn | null = null;
 
 	function openSettings() {
 		openSettingsWindow().catch(console.error);
@@ -89,6 +91,16 @@
 
 		await initApp(container);
 
+		const savedTransform = await getLive2dTransform();
+		setModelTransform(savedTransform.scale, savedTransform.offset_x, savedTransform.offset_y);
+
+		unlistenTransform = await listen<{ scale: number; offset_x: number; offset_y: number }>(
+			'set-live2d-transform',
+			(event) => {
+				setModelTransform(event.payload.scale, event.payload.offset_x, event.payload.offset_y);
+			}
+		);
+
 		let savedUrl = await getCurrentModelUrl();
 		if (!savedUrl) {
 			const savedPath = await getModelPath();
@@ -126,6 +138,7 @@
 		unlisten?.();
 		unlistenCursor?.();
 		unlistenEvent?.();
+		unlistenTransform?.();
 		vadStore.stop();
 		destroyApp();
 	});

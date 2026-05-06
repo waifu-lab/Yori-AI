@@ -35,6 +35,8 @@ fn main() {
             command::live2d_window::get_current_model_url,
             command::live2d_window::get_model_path,
             command::live2d_window::list_expressions,
+            command::live2d_window::get_live2d_transform,
+            command::live2d_window::set_live2d_transform,
             // backend
             command::backend::backend_connect,
             command::backend::backend_disconnect,
@@ -87,6 +89,22 @@ fn main() {
                 {
                     tauri::Manager::state::<core::state::AppState>(handle)
                         .set_live2d_model_path(Some(model_path));
+                }
+                {
+                    let scale = store
+                        .get(core::state::STORE_KEY_LIVE2D_SCALE)
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(1.0);
+                    let offset_x = store
+                        .get(core::state::STORE_KEY_LIVE2D_OFFSET_X)
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.0);
+                    let offset_y = store
+                        .get(core::state::STORE_KEY_LIVE2D_OFFSET_Y)
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.0);
+                    tauri::Manager::state::<core::state::AppState>(handle)
+                        .set_live2d_transform(scale, offset_x, offset_y);
                 }
             }
 

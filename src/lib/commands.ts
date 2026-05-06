@@ -28,6 +28,20 @@ export function getModelPath(): Promise<string | null> {
 	return invoke('get_model_path');
 }
 
+export interface Live2dTransform {
+	scale: number;
+	offset_x: number;
+	offset_y: number;
+}
+
+export function getLive2dTransform(): Promise<Live2dTransform> {
+	return invoke('get_live2d_transform');
+}
+
+export function setLive2dTransform(scale: number, offsetX: number, offsetY: number): Promise<void> {
+	return invoke('set_live2d_transform', { scale, offsetX, offsetY });
+}
+
 type CommandResult<T> = {
 	data: T;
 	err: string;

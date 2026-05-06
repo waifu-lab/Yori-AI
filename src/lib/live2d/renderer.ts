@@ -13,6 +13,10 @@ let modelNaturalHeight = 0;
 let initialized = false;
 let dprCleanup: (() => void) | null = null;
 
+let userScale = 1.0;
+let userOffsetX = 0.0;
+let userOffsetY = 0.0;
+
 /** Whether the loaded model has a formal LipSync parameter group. */
 let hasNativeLipSync = false;
 
@@ -105,9 +109,16 @@ function logicalSize() {
 function repositionModel() {
 	if (!app || !currentModel || modelNaturalWidth === 0 || modelNaturalHeight === 0) return;
 	const { w, h } = logicalSize();
-	const scale = Math.min((w / modelNaturalWidth) * 0.9, (h / modelNaturalHeight) * 0.9);
-	currentModel.scale.set(scale);
-	currentModel.position.set(w / 2, h / 2);
+	const baseScale = Math.min((w / modelNaturalWidth) * 0.9, (h / modelNaturalHeight) * 0.9);
+	currentModel.scale.set(baseScale * userScale);
+	currentModel.position.set(w / 2 + userOffsetX, h / 2 + userOffsetY);
+}
+
+export function setModelTransform(scale: number, offsetX: number, offsetY: number): void {
+	userScale = scale;
+	userOffsetX = offsetX;
+	userOffsetY = offsetY;
+	repositionModel();
 }
 
 /**
@@ -130,9 +141,9 @@ export async function loadModelFromUrl(url: string): Promise<void> {
 	model.anchor.set(0.5);
 	modelNaturalWidth = model.width;
 	modelNaturalHeight = model.height;
-	const scale = Math.min((app.screen.width / modelNaturalWidth) * 0.9, (app.screen.height / modelNaturalHeight) * 0.9);
-	model.scale.set(scale);
-	model.position.set(app.screen.width / 2, app.screen.height / 2);
+	const baseScale = Math.min((app.screen.width / modelNaturalWidth) * 0.9, (app.screen.height / modelNaturalHeight) * 0.9);
+	model.scale.set(baseScale * userScale);
+	model.position.set(app.screen.width / 2 + userOffsetX, app.screen.height / 2 + userOffsetY);
 
 	app.stage.addChild(model as any);
 	currentModel = model;
