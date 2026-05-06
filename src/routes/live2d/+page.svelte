@@ -7,13 +7,13 @@
 	import { getCurrentModelUrl, getModelPath, openFloatChatWindow, openSettingsWindow, setModelPath } from '$lib/commands';
 	import { vadStore } from '$lib/stores/vad.svelte';
 	import {
+		attachLipsyncToLast,
 		destroyApp,
 		getExpressionNames,
 		initApp,
 		loadModelFromUrl,
 		needsBackendLipsync,
 		playAudio,
-		scheduleLipsync,
 		setExpression,
 		setFocus
 	} from '$lib/live2d/renderer';
@@ -115,9 +115,9 @@
 			if (msg.event === 'emotion') {
 				setExpression(msg.data.emotion);
 			} else if (msg.event === 'audio') {
-				playAudio(msg.data.audio, msg.data.format);
+				playAudio(msg.data.audio, msg.data.format, msg.data.duration_ms);
 			} else if (msg.event === 'lipsync' && needsBackendLipsync()) {
-				scheduleLipsync(msg.data.visemes);
+				attachLipsyncToLast(msg.data.visemes);
 			}
 		});
 	});

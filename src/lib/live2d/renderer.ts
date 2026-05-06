@@ -22,6 +22,14 @@ let activeAudio: HTMLAudioElement | null = null;
 /** Scheduled lipsync animation frame ID. */
 let lipsyncRafId: number | null = null;
 
+interface AudioQueueEntry {
+	dataUrl: string;
+	durationMs?: number;
+	visemes?: Viseme[];
+}
+const audioQueue: AudioQueueEntry[] = [];
+let audioPlaying = false;
+
 async function ensureLoaded() {
 	if (initialized) return;
 	const pixi = await import('pixi.js');
@@ -149,12 +157,14 @@ export function needsBackendLipsync(): boolean {
 /** Returns the list of expression names defined by the currently loaded model. */
 export function getExpressionNames(): string[] {
 	if (!currentModel) return [];
-	const mgr = (currentModel as Live2DModelType & { internalModel?: { motionManager?: { expressionManager?: { definitions: { Name?: string; name?: string }[] } } } }).internalModel?.motionManager?.expressionManager;
+	const mgr = (
+		currentModel as Live2DModelType & {
+			internalModel?: { motionManager?: { expressionManager?: { definitions: { Name?: string; name?: string }[] } } };
+		}
+	).internalModel?.motionManager?.expressionManager;
 	if (!mgr) return [];
 	// definitions is ExpressionSpec[], each has a Name field (Cubism4) or name field (Cubism2)
-	return (mgr.definitions as { Name?: string; name?: string }[])
-		.map((d) => d.Name ?? d.name ?? '')
-		.filter(Boolean);
+	return (mgr.definitions as { Name?: string; name?: string }[]).map((d) => d.Name ?? d.name ?? '').filter(Boolean);
 }
 
 export function setExpression(name: string): void {
@@ -169,17 +179,62 @@ export function setFocus(x: number, y: number): void {
 }
 
 /**
- * Play a base64-encoded audio clip. If the model has native LipSync support the
- * engine's `speak()` method is used, which drives the mouth automatically.
- * Otherwise we rely on `scheduleLipsync()` called separately with viseme data.
+ * Enqueue a base64-encoded audio clip for sequential playback.
+ * Attach viseme data via `attachLipsyncToLast` before the entry starts playing.
  */
-export function playAudio(audioB64: string, format: string): void {
-	stopAudio();
-	const dataUrl = `data:audio/${format};base64,${audioB64}`;
+export function playAudio(audioB64: string, format: string, durationMs?: number): void {
+	audioQueue.push({ dataUrl: `data:audio/${format};base64,${audioB64}`, durationMs });
+	if (!audioPlaying) playNextAudio();
+}
+
+/**
+ * Attach viseme data to the most recently enqueued audio entry.
+ * If the queue is empty the current audio is already playing — schedule immediately.
+ */
+export function attachLipsyncToLast(visemes: Viseme[]): void {
+	if (audioQueue.length > 0) {
+		audioQueue[audioQueue.length - 1].visemes = visemes;
+	} else {
+		scheduleLipsync(visemes);
+	}
+}
+
+function playNextAudio(): void {
+	const entry = audioQueue.shift();
+	if (!entry) {
+		audioPlaying = false;
+		return;
+	}
+	audioPlaying = true;
+	const { dataUrl, durationMs, visemes } = entry;
+
+	let advanced = false;
+	function advance() {
+		if (advanced) return;
+		advanced = true;
+		playNextAudio();
+	}
+
 	if (hasNativeLipSync && currentModel) {
 		(currentModel as any).speak(dataUrl);
+
+		const probe = new Audio(dataUrl);
+		probe.addEventListener(
+			'loadedmetadata',
+			() => {
+				setTimeout(advance, probe.duration * 1000 + 200);
+			},
+			{ once: true }
+		);
+		probe.addEventListener('error', advance, { once: true });
+		if (durationMs) setTimeout(advance, durationMs + 100);
 	} else {
+		stopAudio();
 		activeAudio = new Audio(dataUrl);
+		if (visemes) scheduleLipsync(visemes);
+		activeAudio.addEventListener('ended', advance, { once: true });
+		activeAudio.addEventListener('error', advance, { once: true });
+		if (durationMs) setTimeout(advance, durationMs + 100);
 		activeAudio.play().catch((e) => console.warn('[live2d] audio play failed:', e));
 	}
 }
