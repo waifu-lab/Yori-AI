@@ -1,5 +1,13 @@
-import { listConversations, getConversationMessages, streamChat, type ConversationItem } from '$lib/backend/http';
-import type { ChatEntry } from '$lib/backend/types';
+import { getConversationMessages, listConversations, resolveAttachmentUrl, streamChat, type ConversationItem } from '$lib/backend/http';
+import type { Attachment, ChatEntry } from '$lib/backend/types';
+
+function normalizeAttachments(raw: unknown): Attachment[] | undefined {
+	if (!Array.isArray(raw) || raw.length === 0) return undefined;
+	return raw.map((a) => {
+		const att = a as Attachment;
+		return { ...att, url: resolveAttachmentUrl(att.url) };
+	});
+}
 
 export type { ChatEntry, ConversationItem };
 
@@ -37,7 +45,13 @@ class ChatHttpStore {
 						.join('') ??
 					(m.content as string | undefined) ??
 					'';
-				return { id: m.id, role: m.role, content, pending: false };
+				return {
+					id: m.id,
+					role: m.role,
+					content,
+					pending: false,
+					attachments: normalizeAttachments(m.attachments)
+				};
 			});
 		} catch (e) {
 			console.error('[http] loadMessages:', e);
@@ -49,7 +63,7 @@ class ChatHttpStore {
 		this.messages = [];
 	}
 
-	async send(content: string) {
+	async send(content: string, attachments?: Attachment[]) {
 		if (this.sending) return;
 
 		if (!this.activeConversationId) {
@@ -60,7 +74,19 @@ class ChatHttpStore {
 		this.sending = true;
 
 		const userMsgId = crypto.randomUUID();
-		this.messages.push({ id: userMsgId, role: 'user', content, pending: false });
+		this.messages.push({
+			id: userMsgId,
+			role: 'user',
+			content,
+			pending: false,
+			attachments: attachments?.length
+				? attachments.map((a) => ({
+						...a,
+						data: undefined,
+						url: a.url ? resolveAttachmentUrl(a.url) : a.data ? `data:${a.content_type};base64,${a.data}` : undefined
+					}))
+				: undefined
+		});
 
 		const asstMsgId = crypto.randomUUID();
 		this.messages.push({ id: asstMsgId, role: 'assistant', content: '', pending: true });
@@ -90,7 +116,7 @@ class ChatHttpStore {
 				}
 				this.sending = false;
 			}
-		});
+		}, attachments);
 	}
 }
 

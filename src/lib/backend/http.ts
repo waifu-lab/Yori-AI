@@ -1,6 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 import axios from 'axios';
 
+import type { Attachment } from './types';
+export type { Attachment };
+
 function toHttpBase(wsUrl: string): string {
 	const trimmed = wsUrl.replace(/\/ws\/?$/, '').replace(/\/$/, '');
 	return trimmed.startsWith('wss://') ? trimmed.replace('wss://', 'https://') : trimmed.replace('ws://', 'http://');
@@ -13,6 +16,13 @@ async function getHttpBase(): Promise<string> {
 		_httpBase = toHttpBase(wsUrl);
 	}
 	return _httpBase;
+}
+
+export function resolveAttachmentUrl(url: string | undefined): string {
+	if (!url) return '';
+	if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
+	if (!_httpBase) return url;
+	return url.startsWith('/') ? `${_httpBase}${url}` : `${_httpBase}/${url}`;
 }
 
 export interface ConversationItem {
@@ -30,13 +40,6 @@ export interface HistoryMessage {
 	content: string;
 	created_at?: string;
 	[key: string]: unknown;
-}
-
-export interface Attachment {
-	filename: string;
-	content_type: string;
-	data?: string;
-	url?: string;
 }
 
 export interface StreamChatCallbacks {

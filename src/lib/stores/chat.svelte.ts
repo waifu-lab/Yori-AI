@@ -59,8 +59,8 @@ class ChatStore {
 		this.unlisteners = [];
 	}
 
-	addUserMessage(requestId: string, content: string) {
-		this.messages.push({ id: requestId, role: 'user', content, pending: false });
+	addUserMessage(requestId: string, content: string, attachments?: ChatEntry['attachments']) {
+		this.messages.push({ id: requestId, role: 'user', content, pending: false, attachments });
 	}
 }
 

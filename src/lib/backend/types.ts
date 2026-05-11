@@ -4,10 +4,12 @@ export interface ConnectedMessage {
 }
 
 export interface Attachment {
+	id?: string;
 	filename: string;
 	content_type: string;
-	data?: string; // base64
+	data?: string; // base64 (outgoing only)
 	url?: string;
+	size_bytes?: number;
 }
 
 export interface ChatMessage {
@@ -97,4 +99,5 @@ export interface ChatEntry {
 	role: 'user' | 'assistant';
 	content: string;
 	pending: boolean;
+	attachments?: Attachment[];
 }
