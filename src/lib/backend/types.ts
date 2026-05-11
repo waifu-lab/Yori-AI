@@ -3,12 +3,21 @@ export interface ConnectedMessage {
 	session_token: string;
 }
 
+export interface Attachment {
+	filename: string;
+	content_type: string;
+	data?: string; // base64
+	url?: string;
+}
+
 export interface ChatMessage {
 	type: 'chat';
 	conversation_id?: string;
 	request_id?: string;
 	content: string;
+	attachments?: Attachment[];
 	live2d?: boolean;
+	need_lipsync?: boolean;
 }
 
 export interface VoiceMessage {

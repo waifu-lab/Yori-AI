@@ -13,12 +13,24 @@ pub struct Live2dSyncMsg {
     pub expressions: Vec<String>,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Attachment {
+    pub filename: String,
+    pub content_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct ChatMsg {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conversation_id: Option<String>,
     pub request_id: String,
     pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attachments: Option<Vec<Attachment>>,
     /// Whether to trigger emotion / audio events on the backend.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub live2d: Option<bool>,

@@ -32,6 +32,13 @@ export interface HistoryMessage {
 	[key: string]: unknown;
 }
 
+export interface Attachment {
+	filename: string;
+	content_type: string;
+	data?: string;
+	url?: string;
+}
+
 export interface StreamChatCallbacks {
 	onChunk: (content: string) => void;
 	onDone: (content: string, conversationId?: string) => void;
@@ -104,7 +111,8 @@ function parseSseLines(
 export async function streamChat(
 	content: string,
 	conversationId: string,
-	callbacks: StreamChatCallbacks
+	callbacks: StreamChatCallbacks,
+	attachments?: Attachment[]
 ): Promise<void> {
 	const base = await getHttpBase();
 	const buf = { value: '' };
@@ -115,7 +123,7 @@ export async function streamChat(
 	try {
 		await axios.post(
 			`${base}/chat/`,
-			{ conversation_id: conversationId, content },
+			{ conversation_id: conversationId, content, ...(attachments?.length ? { attachments } : {}) },
 			{
 				responseType: 'text',
 				headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },

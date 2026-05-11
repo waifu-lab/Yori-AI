@@ -1,10 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
-import type { ChunkMessage, ConnectedMessage, DoneMessage, EventMessage, ErrorMessage, Live2dSyncAckMessage, TranscriptMessage } from './types';
+import type { Attachment, ChunkMessage, ConnectedMessage, DoneMessage, ErrorMessage, EventMessage, Live2dSyncAckMessage, TranscriptMessage } from './types';
 
-export function sendChat(content: string, live2d?: boolean): Promise<string> {
-	return invoke<string>('backend_send_chat', { content, live2d });
+export function sendChat(content: string, live2d?: boolean, attachments?: Attachment[]): Promise<string> {
+	return invoke<string>('backend_send_chat', { content, live2d, attachments });
 }
 
 export function sendVoice(audioB64: string): Promise<string> {
