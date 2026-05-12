@@ -5,5 +5,6 @@ export { default as Messages } from './ChatMessages.svelte';
 export { default as Empty } from './ChatEmpty.svelte';
 export { default as Input } from './ChatInput.svelte';
 export { default as AiResult } from './AiResult.svelte';
+export { default as ToolCall } from './ToolCall.svelte';
 export { default as UserBubble } from './UserBubble.svelte';
 export { default as SmartInput } from './SmartInput.svelte';

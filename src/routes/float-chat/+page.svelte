@@ -51,6 +51,14 @@
 					<div class="flex justify-end">
 						<Chat.UserBubble content={msg.content} attachments={msg.attachments} />
 					</div>
+				{:else if msg.role === 'tool'}
+					<Chat.ToolCall
+						name={msg.name}
+						status={msg.status}
+						args={msg.args}
+						result={msg.result}
+						error={msg.error}
+					/>
 				{:else}
 					<Chat.AiResult content={msg.content} isStreaming={msg.pending} />
 				{/if}

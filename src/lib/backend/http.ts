@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import axios from 'axios';
 
-import type { Attachment } from './types';
+import type { Attachment, EventMessage } from './types';
 export type { Attachment };
 
 function toHttpBase(wsUrl: string): string {
@@ -46,6 +46,7 @@ export interface StreamChatCallbacks {
 	onChunk: (content: string) => void;
 	onDone: (content: string, conversationId?: string) => void;
 	onError: (code: string, message: string) => void;
+	onEvent?: (event: EventMessage) => void;
 }
 
 export async function listConversations(limit = 20, q?: string): Promise<ConversationItem[]> {
@@ -104,6 +105,8 @@ function parseSseLines(
 				callbacks.onDone(evtContent || accumulatedContent.value, convId);
 			} else if (type === 'error') {
 				callbacks.onError((evt.code as string) ?? 'error', (evt.message as string) ?? '');
+			} else if (type === 'event') {
+				callbacks.onEvent?.(evt as unknown as EventMessage);
 			}
 		} catch {
 			// ignore malformed SSE lines

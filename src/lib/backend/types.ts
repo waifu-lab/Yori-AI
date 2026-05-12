@@ -83,7 +83,24 @@ export interface LipsyncEventMessage {
 	data: { visemes: Viseme[] };
 }
 
-export type EventMessage = EmotionEventMessage | AudioEventMessage | LipsyncEventMessage;
+export interface ToolCallEventMessage {
+	type: 'event';
+	event: 'tool_call';
+	data: { name: string; arguments: string; id?: string };
+}
+
+export interface ToolResultEventMessage {
+	type: 'event';
+	event: 'tool_result';
+	data: { name?: string; id?: string; result?: unknown; error?: string };
+}
+
+export type EventMessage =
+	| EmotionEventMessage
+	| AudioEventMessage
+	| LipsyncEventMessage
+	| ToolCallEventMessage
+	| ToolResultEventMessage;
 
 export interface ErrorMessage {
 	type: 'error';
@@ -101,3 +118,16 @@ export interface ChatEntry {
 	pending: boolean;
 	attachments?: Attachment[];
 }
+
+export interface ToolEntry {
+	id: string;
+	role: 'tool';
+	name: string;
+	status: 'running' | 'success' | 'error';
+	args?: string;
+	result?: unknown;
+	error?: string;
+	pending: boolean;
+}
+
+export type MessageEntry = ChatEntry | ToolEntry;
