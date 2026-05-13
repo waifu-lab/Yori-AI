@@ -197,3 +197,150 @@ export async function setConfig(key: string, value: Record<string, unknown>): Pr
 	if (!res.ok) throw new Error(`HTTP ${res.status}`);
 	return res.json();
 }
+
+export interface MCPServerItem {
+	name: string;
+	type: string;
+	enabled: boolean;
+}
+
+export interface AddMCPPayload {
+	name: string;
+	type: 'stdio' | 'sse';
+	command?: string[];
+	url?: string;
+	config?: Record<string, unknown>;
+}
+
+async function jsonOrThrow<T>(res: Response): Promise<T> {
+	if (!res.ok) {
+		let detail = `HTTP ${res.status}`;
+		try {
+			const body = await res.json();
+			if (body?.detail) detail = String(body.detail);
+		} catch {
+			// ignore
+		}
+		throw new Error(detail);
+	}
+	return res.json() as Promise<T>;
+}
+
+export async function listMCP(): Promise<MCPServerItem[]> {
+	const base = await getHttpBase();
+	return jsonOrThrow<MCPServerItem[]>(await fetch(`${base}/mcp/`));
+}
+
+export async function addMCP(payload: AddMCPPayload): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(
+		await fetch(`${base}/mcp/`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payload)
+		})
+	);
+}
+
+export async function enableMCP(name: string): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(await fetch(`${base}/mcp/${encodeURIComponent(name)}/enable`, { method: 'POST' }));
+}
+
+export async function disableMCP(name: string): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(await fetch(`${base}/mcp/${encodeURIComponent(name)}/disable`, { method: 'POST' }));
+}
+
+export async function removeMCP(name: string): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(await fetch(`${base}/mcp/${encodeURIComponent(name)}`, { method: 'DELETE' }));
+}
+
+export interface PluginItem {
+	name: string;
+	version?: string;
+	description?: string;
+	enabled?: boolean;
+	config?: Record<string, unknown>;
+	[key: string]: unknown;
+}
+
+export interface AvailablePluginItem {
+	name: string;
+	version?: string;
+	description?: string;
+	config_schema?: Record<string, unknown>;
+}
+
+export async function listPlugins(): Promise<PluginItem[]> {
+	const base = await getHttpBase();
+	return jsonOrThrow<PluginItem[]>(await fetch(`${base}/plugins/`));
+}
+
+export async function listAvailablePlugins(): Promise<AvailablePluginItem[]> {
+	const base = await getHttpBase();
+	return jsonOrThrow<AvailablePluginItem[]>(await fetch(`${base}/plugins/available`));
+}
+
+export async function installPlugin(
+	plugin_name: string,
+	config?: Record<string, unknown>
+): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(
+		await fetch(`${base}/plugins/`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ plugin_name, config })
+		})
+	);
+}
+
+export async function enablePlugin(name: string): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(await fetch(`${base}/plugins/${encodeURIComponent(name)}/enable`, { method: 'POST' }));
+}
+
+export async function disablePlugin(name: string): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(await fetch(`${base}/plugins/${encodeURIComponent(name)}/disable`, { method: 'POST' }));
+}
+
+export async function uninstallPlugin(name: string): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(await fetch(`${base}/plugins/${encodeURIComponent(name)}`, { method: 'DELETE' }));
+}
+
+export interface SkillItem {
+	name: string;
+	version?: string;
+	description?: string;
+	[key: string]: unknown;
+}
+
+export async function listSkills(): Promise<SkillItem[]> {
+	const base = await getHttpBase();
+	return jsonOrThrow<SkillItem[]>(await fetch(`${base}/skill/`));
+}
+
+export async function installSkill(source: string, overwrite = false): Promise<Record<string, unknown>> {
+	const base = await getHttpBase();
+	return jsonOrThrow(
+		await fetch(`${base}/skill/install`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ source, overwrite })
+		})
+	);
+}
+
+export async function uninstallSkill(name: string): Promise<{ status: string; name: string }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(await fetch(`${base}/skill/${encodeURIComponent(name)}`, { method: 'DELETE' }));
+}
+
+export async function reloadSkills(): Promise<{ status: string; count: number }> {
+	const base = await getHttpBase();
+	return jsonOrThrow(await fetch(`${base}/skill/reload`, { method: 'POST' }));
+}
