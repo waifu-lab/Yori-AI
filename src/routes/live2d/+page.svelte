@@ -1,15 +1,23 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import type { UnlistenFn } from '@tauri-apps/api/event';
-	import { listen } from '@tauri-apps/api/event';
+	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
 	import { onEvent, sendLive2dSync } from '$lib/backend/ws';
-	import { getCurrentModelUrl, getLive2dTransform, getModelPath, openFloatChatWindow, openSettingsWindow, setModelPath } from '$lib/commands';
+	import {
+		getCurrentModelUrl,
+		getLive2dTransform,
+		getModelPath,
+		openFloatChatWindow,
+		openSettingsWindow,
+		setModelPath
+	} from '$lib/commands';
 	import { vadStore } from '$lib/stores/vad.svelte';
 	import {
 		attachLipsyncToLast,
 		destroyApp,
 		getExpressionNames,
+		getModelBounds,
+		hitTestAt,
 		initApp,
 		loadModelFromUrl,
 		needsBackendLipsync,
@@ -19,10 +27,61 @@
 		setModelTransform
 	} from '$lib/live2d/renderer';
 
+	const PET_WINDOW_MS = 1000;
+	const PET_MIN_REVERSALS = 3;
+	const PET_COOLDOWN_MS = 3000;
+	const PET_MIN_DELTA_PX = 6;
+
+	let petReversals: number[] = [];
+	let petLastDir = 0;
+	let petLastX = 0;
+	let petCooldownUntil = 0;
+
+	function onPetDetected(areas: string[]) {
+		import('@tauri-apps/api/event').then(({ emit }) => emit('pet-detected', { areas })).catch(() => {});
+	}
+
+	function handlePetMove(e: MouseEvent) {
+		const now = performance.now();
+		const dpr = window.devicePixelRatio || 1;
+		const pixiX = e.clientX / dpr;
+		const pixiY = e.clientY / dpr;
+
+		const bounds = getModelBounds();
+		const inBounds =
+			!!bounds &&
+			pixiX >= bounds.cx - bounds.hw &&
+			pixiX <= bounds.cx + bounds.hw &&
+			pixiY >= bounds.cy - bounds.hh &&
+			pixiY <= bounds.cy + bounds.hh;
+
+		if (!inBounds) return;
+
+		const dx = pixiX - petLastX;
+		petLastX = pixiX;
+		if (Math.abs(dx) < PET_MIN_DELTA_PX) return;
+
+		const dir = dx > 0 ? 1 : -1;
+		if (petLastDir !== 0 && dir !== petLastDir) {
+			petReversals.push(now);
+		}
+		petLastDir = dir;
+
+		petReversals = petReversals.filter((t) => now - t < PET_WINDOW_MS);
+
+		if (petReversals.length >= PET_MIN_REVERSALS && now > petCooldownUntil) {
+			petCooldownUntil = now + PET_COOLDOWN_MS;
+			petReversals = [];
+			petLastDir = 0;
+			onPetDetected(hitTestAt(pixiX, pixiY));
+		}
+	}
+
 	let container: HTMLDivElement;
 	let unlisten: (() => void) | null = null;
 	let unlistenCursor: UnlistenFn | null = null;
 	let unlistenEvent: UnlistenFn | null = null;
+	let unlistenIdle: UnlistenFn | null = null;
 	let unlistenTransform: UnlistenFn | null = null;
 
 	function openSettings() {
@@ -132,13 +191,29 @@
 				attachLipsyncToLast(msg.data.visemes);
 			}
 		});
+
+		const unlistenIdleEvt = await listen('user-idle', () => {
+			import('@tauri-apps/api/event').then(({ emit }) => emit('user-idle-forward', {})).catch(() => {});
+		});
+		const unlistenActiveEvt = await listen('user-active', () => {
+			import('@tauri-apps/api/event').then(({ emit }) => emit('user-active-forward', {})).catch(() => {});
+		});
+		unlistenIdle = () => {
+			unlistenIdleEvt();
+			unlistenActiveEvt();
+		};
+
+		// Pet detection: track horizontal oscillation over the model.
+		window.addEventListener('mousemove', handlePetMove);
 	});
 
 	onDestroy(() => {
 		unlisten?.();
 		unlistenCursor?.();
 		unlistenEvent?.();
+		unlistenIdle?.();
 		unlistenTransform?.();
+		window.removeEventListener('mousemove', handlePetMove);
 		vadStore.stop();
 		destroyApp();
 	});
@@ -160,7 +235,8 @@
 		onclick={() => vadStore.toggle()}
 		disabled={vadStore.busy}
 	>
-		<span class={vadStore.active ? 'icon-[material-symbols--mic]' : 'icon-[material-symbols--mic-off-outline-rounded]'}></span>
+		<span class={vadStore.active ? 'icon-[material-symbols--mic]' : 'icon-[material-symbols--mic-off-outline-rounded]'}
+		></span>
 	</button>
 	<button class="icon-btn" title="設定" onclick={openSettings}>
 		<span class="icon-[material-symbols--settings-outline-rounded]"></span>

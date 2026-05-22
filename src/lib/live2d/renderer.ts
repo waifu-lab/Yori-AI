@@ -183,6 +183,38 @@ export function setExpression(name: string): void {
 	currentModel.expression(name);
 }
 
+/**
+ * Returns the model's current bounding region in Pixi (logical) pixel coordinates.
+ * cx/cy is the model centre; hw/hh are the half-dimensions of the model bounding box.
+ * Returns null if no model is loaded.
+ */
+export function getModelBounds(): { cx: number; cy: number; hw: number; hh: number } | null {
+	if (!app || !currentModel || modelNaturalWidth === 0 || modelNaturalHeight === 0) return null;
+	const { w, h } = logicalSize();
+	const baseScale = Math.min((w / modelNaturalWidth) * 0.9, (h / modelNaturalHeight) * 0.9);
+	const scale = baseScale * userScale;
+	return {
+		cx: w / 2 + userOffsetX,
+		cy: h / 2 + userOffsetY,
+		hw: (modelNaturalWidth / 2) * scale,
+		hh: (modelNaturalHeight / 2) * scale
+	};
+}
+
+/**
+ * Hit-test a point in Pixi (logical) pixel coordinates against the model's named hit areas.
+ * Returns an array of hit-area names (e.g. ["Head", "Body"]).
+ * Pixi coords = CSS clientX / devicePixelRatio.
+ */
+export function hitTestAt(pixiX: number, pixiY: number): string[] {
+	if (!currentModel) return [];
+	try {
+		return (currentModel as unknown as { hitTest(x: number, y: number): string[] }).hitTest(pixiX, pixiY) ?? [];
+	} catch {
+		return [];
+	}
+}
+
 /** Feed an external cursor position (normalised -1..1) to the model's eye-tracking. */
 export function setFocus(x: number, y: number): void {
 	if (!currentModel) return;
