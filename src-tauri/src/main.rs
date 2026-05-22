@@ -24,6 +24,7 @@ fn main() {
         .manage(core::state::AppState::new())
         .manage(audio_player)
         .manage(vad_manager)
+        .manage(command::wander::WanderState::new())
         .invoke_handler(tauri::generate_handler![
             // live2d
             command::live2d_window::open_settings_window,
@@ -70,6 +71,10 @@ fn main() {
             command::waifu_node::waifu_node_set_backend_url,
             command::waifu_node::waifu_node_latest_version,
             command::waifu_node::waifu_node_download_latest,
+            // wander
+            command::wander::set_wander_enabled,
+            command::wander::get_wander_enabled,
+            command::wander::wander_now,
         ])
         .setup(|app| {
             let handle = app.handle();
@@ -115,6 +120,14 @@ fn main() {
             }
 
             command::mouse_track::start_mouse_tracker(app.handle().clone());
+            {
+                let wander = tauri::Manager::state::<command::wander::WanderState>(handle);
+                command::wander::start_wander_loop(
+                    handle.clone(),
+                    wander.enabled.clone(),
+                    wander.trigger_now.clone(),
+                );
+            }
             let _tray = app::build_tray(app)?;
             Ok(())
         })

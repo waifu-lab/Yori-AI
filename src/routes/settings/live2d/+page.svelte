@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { open } from '@tauri-apps/plugin-dialog';
-	import { getModelPath, setModelPath } from '$lib/commands';
+	import { getModelPath, setModelPath, getWanderEnabled, setWanderEnabled } from '$lib/commands';
 	import { live2dStore } from '$lib/stores/live2d.svelte';
-	import { Button, Setting, Range } from '@waifu/ui';
+	import { Button, Checkbox, Setting, Range } from '@waifu/ui';
 
 	let modelPath = $state<string | null>(null);
 	let loading = $state(true);
@@ -11,11 +11,18 @@
 	let saving = $state(false);
 	let error = $state<string | null>(null);
 
+	let wanderEnabled = $state(true);
 	onMount(async () => {
-		const [path] = await Promise.all([getModelPath(), live2dStore.load()]);
+		const [path, , wander] = await Promise.all([getModelPath(), live2dStore.load(), getWanderEnabled()]);
 		modelPath = path;
+		wanderEnabled = wander;
 		loading = false;
 	});
+
+	async function toggleWander(enabled: boolean) {
+		wanderEnabled = enabled;
+		await setWanderEnabled(enabled);
+	}
 
 	$effect(() => {
 		live2dStore.scale;
@@ -97,10 +104,14 @@
 	</Setting.Card>
 
 	<Setting.Card
-		title="模型顯示調整"
-		icon="icon-[material-symbols--open-with-rounded]"
-		description="拖曳滑桿即時預覽"
+		title="自動漫遊"
+		icon="icon-[material-symbols--moving-rounded]"
+		description="讓桌寵每隔 5〜10 分鐘自動移動到螢幕上的隨機位置"
 	>
+		<Checkbox id="wander-toggle" label="啟用自動漫遊" checked={wanderEnabled} onCheckedChange={toggleWander} />
+	</Setting.Card>
+
+	<Setting.Card title="模型顯示調整" icon="icon-[material-symbols--open-with-rounded]" description="拖曳滑桿即時預覽">
 		<div class="flex flex-col gap-4">
 			<div class="flex flex-col gap-1.5">
 				<div class="flex items-center justify-between">

@@ -109,3 +109,16 @@ export function vadSetDevice(device: string | null): Promise<void> {
 export function vadGetDevice(): Promise<string | null> {
 	return invoke('vad_get_device');
 }
+
+export function setWanderEnabled(enabled: boolean): Promise<void> {
+	return invoke('set_wander_enabled', { enabled });
+}
+
+export function getWanderEnabled(): Promise<boolean> {
+	return invoke('get_wander_enabled');
+}
+
+/** Skip the current idle wait and trigger a wander move right now. */
+export function wanderNow(): Promise<void> {
+	return invoke('wander_now');
+}
