@@ -24,6 +24,7 @@ fn main() {
         .manage(core::state::AppState::new())
         .manage(audio_player)
         .manage(vad_manager)
+        .manage(command::wander::WanderState::new())
         .invoke_handler(tauri::generate_handler![
             // live2d
             command::live2d_window::open_settings_window,
@@ -35,6 +36,8 @@ fn main() {
             command::live2d_window::get_current_model_url,
             command::live2d_window::get_model_path,
             command::live2d_window::list_expressions,
+            command::live2d_window::get_live2d_transform,
+            command::live2d_window::set_live2d_transform,
             // backend
             command::backend::backend_connect,
             command::backend::backend_disconnect,
@@ -68,6 +71,10 @@ fn main() {
             command::waifu_node::waifu_node_set_backend_url,
             command::waifu_node::waifu_node_latest_version,
             command::waifu_node::waifu_node_download_latest,
+            // wander
+            command::wander::set_wander_enabled,
+            command::wander::get_wander_enabled,
+            command::wander::wander_now,
         ])
         .setup(|app| {
             let handle = app.handle();
@@ -88,6 +95,22 @@ fn main() {
                     tauri::Manager::state::<core::state::AppState>(handle)
                         .set_live2d_model_path(Some(model_path));
                 }
+                {
+                    let scale = store
+                        .get(core::state::STORE_KEY_LIVE2D_SCALE)
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(1.0);
+                    let offset_x = store
+                        .get(core::state::STORE_KEY_LIVE2D_OFFSET_X)
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.0);
+                    let offset_y = store
+                        .get(core::state::STORE_KEY_LIVE2D_OFFSET_Y)
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.0);
+                    tauri::Manager::state::<core::state::AppState>(handle)
+                        .set_live2d_transform(scale, offset_x, offset_y);
+                }
             }
 
             // Auto-connect backend WS
@@ -97,6 +120,14 @@ fn main() {
             }
 
             command::mouse_track::start_mouse_tracker(app.handle().clone());
+            {
+                let wander = tauri::Manager::state::<command::wander::WanderState>(handle);
+                command::wander::start_wander_loop(
+                    handle.clone(),
+                    wander.enabled.clone(),
+                    wander.trigger_now.clone(),
+                );
+            }
             let _tray = app::build_tray(app)?;
             Ok(())
         })

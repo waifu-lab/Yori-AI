@@ -9,10 +9,13 @@ use std::{
 use actix_web::{App, HttpRequest, HttpResponse, HttpServer, web};
 use parking_lot::RwLock;
 use percent_encoding::{NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_store::StoreExt;
-use crate::core::state::{AppState, STORE_KEY_LIVE2D_MODEL_PATH};
+use crate::core::state::{
+    AppState, STORE_KEY_LIVE2D_MODEL_PATH, STORE_KEY_LIVE2D_OFFSET_X, STORE_KEY_LIVE2D_OFFSET_Y,
+    STORE_KEY_LIVE2D_SCALE,
+};
 
 pub struct Live2DServer {
     pub port: u16,
@@ -292,6 +295,40 @@ pub fn list_expressions(app: AppHandle) -> Result<Vec<String>, String> {
         .unwrap_or_default();
 
     Ok(expressions)
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Live2dTransform {
+    pub scale: f64,
+    pub offset_x: f64,
+    pub offset_y: f64,
+}
+
+#[tauri::command]
+pub fn get_live2d_transform(app: AppHandle) -> Live2dTransform {
+    let (scale, offset_x, offset_y) = app.state::<AppState>().get_live2d_transform();
+    Live2dTransform { scale, offset_x, offset_y }
+}
+
+#[tauri::command]
+pub async fn set_live2d_transform(
+    scale: f64,
+    offset_x: f64,
+    offset_y: f64,
+    app: AppHandle,
+) -> Result<(), String> {
+    let app_state = app.state::<AppState>();
+    app_state.set_live2d_transform(scale, offset_x, offset_y);
+
+    if let Ok(store) = app.store("settings.json") {
+        store.set(STORE_KEY_LIVE2D_SCALE, scale);
+        store.set(STORE_KEY_LIVE2D_OFFSET_X, offset_x);
+        store.set(STORE_KEY_LIVE2D_OFFSET_Y, offset_y);
+        let _ = store.save();
+    }
+
+    app.emit("set-live2d-transform", Live2dTransform { scale, offset_x, offset_y })
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

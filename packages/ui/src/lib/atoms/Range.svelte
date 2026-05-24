@@ -2,17 +2,17 @@
 	import { Slider } from 'bits-ui';
 
 	interface Props {
-		value?: number[];
+		value?: number;
 		min?: number;
 		max?: number;
 		step?: number;
 		disabled?: boolean;
 		class?: string;
-		onValueChange?: (value: number[]) => void;
+		onValueChange?: (value: number) => void;
 	}
 
 	let {
-		value = $bindable([0]),
+		value = $bindable(0),
 		min = 0,
 		max = 100,
 		step = 1,
@@ -20,16 +20,27 @@
 		class: className = '',
 		onValueChange
 	}: Props = $props();
+
+	let internalValue = $state([value]);
+
+	$effect(() => {
+		internalValue = [value];
+	});
+
+	function handleValueChange(vals: number[]) {
+		value = vals[0] ?? value;
+		onValueChange?.(value);
+	}
 </script>
 
 <Slider.Root
-	bind:value
+	bind:value={internalValue}
 	type="multiple"
 	{min}
 	{max}
 	{step}
 	{disabled}
-	{onValueChange}
+	onValueChange={handleValueChange}
 	class="relative flex w-full touch-none items-center select-none {className}"
 >
 	{#snippet children({ thumbs })}

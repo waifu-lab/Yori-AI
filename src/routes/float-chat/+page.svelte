@@ -3,6 +3,7 @@
 	import { FloatingChatLayout, Chat } from '@waifu/ui';
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { sendChat } from '$lib/backend/ws';
+	import { filesToAttachments } from '$lib/backend/attachments';
 
 	let inputValue = $state('');
 	let sending = $state(false);
@@ -10,12 +11,18 @@
 	onMount(() => chatStore.init());
 	onDestroy(() => chatStore.destroy());
 
-	async function handleSend(value: string) {
-		if (!value.trim() || sending) return;
+	async function handleSend(value: string, files?: File[]) {
+		if ((!value.trim() && !files?.length) || sending) return;
 		sending = true;
 		try {
-			const requestId = await sendChat(value.trim(), true);
-			chatStore.addUserMessage(requestId, value.trim());
+			const attachments = files?.length ? await filesToAttachments(files) : undefined;
+			const requestId = await sendChat(value.trim(), true, attachments);
+			const localAtts = attachments?.map((a) => ({
+				filename: a.filename,
+				content_type: a.content_type,
+				url: a.data ? `data:${a.content_type};base64,${a.data}` : a.url
+			}));
+			chatStore.addUserMessage(requestId, value.trim(), localAtts);
 		} finally {
 			sending = false;
 		}
@@ -42,8 +49,16 @@
 			{#each chatStore.messages as msg (msg.id)}
 				{#if msg.role === 'user'}
 					<div class="flex justify-end">
-						<Chat.UserBubble content={msg.content} />
+						<Chat.UserBubble content={msg.content} attachments={msg.attachments} />
 					</div>
+				{:else if msg.role === 'tool'}
+					<Chat.ToolCall
+						name={msg.name}
+						status={msg.status}
+						args={msg.args}
+						result={msg.result}
+						error={msg.error}
+					/>
 				{:else}
 					<Chat.AiResult content={msg.content} isStreaming={msg.pending} />
 				{/if}

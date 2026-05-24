@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::backend::{
     BackendWs,
-    types::{ChatMsg, ClientMsg, Live2dSyncMsg, VoiceMsg},
+    types::{Attachment, ChatMsg, ClientMsg, Live2dSyncMsg, VoiceMsg},
 };
 
 use crate::core::state::{AppState, STORE_KEY_BACKEND_URL};
@@ -58,6 +58,7 @@ pub fn backend_set_conversation_id(id: Option<String>, state: State<AppState>) {
 pub fn backend_send_chat(
     content: String,
     live2d: Option<bool>,
+    attachments: Option<Vec<Attachment>>,
     ws: State<BackendWs>,
     state: State<AppState>,
 ) -> Result<String, String> {
@@ -74,6 +75,7 @@ pub fn backend_send_chat(
         conversation_id,
         request_id: request_id.clone(),
         content,
+        attachments,
         live2d,
         need_lipsync,
     }))?;

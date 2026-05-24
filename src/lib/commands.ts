@@ -28,6 +28,20 @@ export function getModelPath(): Promise<string | null> {
 	return invoke('get_model_path');
 }
 
+export interface Live2dTransform {
+	scale: number;
+	offset_x: number;
+	offset_y: number;
+}
+
+export function getLive2dTransform(): Promise<Live2dTransform> {
+	return invoke('get_live2d_transform');
+}
+
+export function setLive2dTransform(scale: number, offsetX: number, offsetY: number): Promise<void> {
+	return invoke('set_live2d_transform', { scale, offsetX, offsetY });
+}
+
 type CommandResult<T> = {
 	data: T;
 	err: string;
@@ -94,4 +108,17 @@ export function vadSetDevice(device: string | null): Promise<void> {
 
 export function vadGetDevice(): Promise<string | null> {
 	return invoke('vad_get_device');
+}
+
+export function setWanderEnabled(enabled: boolean): Promise<void> {
+	return invoke('set_wander_enabled', { enabled });
+}
+
+export function getWanderEnabled(): Promise<boolean> {
+	return invoke('get_wander_enabled');
+}
+
+/** Skip the current idle wait and trigger a wander move right now. */
+export function wanderNow(): Promise<void> {
+	return invoke('wander_now');
 }

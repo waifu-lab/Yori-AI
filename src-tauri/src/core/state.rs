@@ -2,6 +2,9 @@ use parking_lot::Mutex;
 
 pub const STORE_KEY_BACKEND_URL: &str = "backend_url";
 pub const STORE_KEY_LIVE2D_MODEL_PATH: &str = "live2d_model_path";
+pub const STORE_KEY_LIVE2D_SCALE: &str = "live2d_scale";
+pub const STORE_KEY_LIVE2D_OFFSET_X: &str = "live2d_offset_x";
+pub const STORE_KEY_LIVE2D_OFFSET_Y: &str = "live2d_offset_y";
 const DEFAULT_BACKEND_URL: &str = "ws://127.0.0.1:8765";
 
 /// In-memory runtime state shared across Tauri commands.
@@ -15,6 +18,10 @@ pub struct AppState {
     pub need_backend_lipsync: Mutex<bool>,
     /// Last used Live2D model path. Persisted via tauri-plugin-store.
     pub live2d_model_path: Mutex<Option<String>>,
+    /// Live2D display transform. Persisted via tauri-plugin-store.
+    pub live2d_scale: Mutex<f64>,
+    pub live2d_offset_x: Mutex<f64>,
+    pub live2d_offset_y: Mutex<f64>,
 }
 
 impl AppState {
@@ -24,6 +31,9 @@ impl AppState {
             backend_url: Mutex::new(DEFAULT_BACKEND_URL.to_string()),
             need_backend_lipsync: Mutex::new(false),
             live2d_model_path: Mutex::new(None),
+            live2d_scale: Mutex::new(1.0),
+            live2d_offset_x: Mutex::new(0.0),
+            live2d_offset_y: Mutex::new(0.0),
         }
     }
 
@@ -57,6 +67,20 @@ impl AppState {
 
     pub fn set_live2d_model_path(&self, path: Option<String>) {
         *self.live2d_model_path.lock() = path;
+    }
+
+    pub fn get_live2d_transform(&self) -> (f64, f64, f64) {
+        (
+            *self.live2d_scale.lock(),
+            *self.live2d_offset_x.lock(),
+            *self.live2d_offset_y.lock(),
+        )
+    }
+
+    pub fn set_live2d_transform(&self, scale: f64, offset_x: f64, offset_y: f64) {
+        *self.live2d_scale.lock() = scale;
+        *self.live2d_offset_x.lock() = offset_x;
+        *self.live2d_offset_y.lock() = offset_y;
     }
 }
 

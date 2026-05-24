@@ -3,12 +3,23 @@ export interface ConnectedMessage {
 	session_token: string;
 }
 
+export interface Attachment {
+	id?: string;
+	filename: string;
+	content_type: string;
+	data?: string; // base64 (outgoing only)
+	url?: string;
+	size_bytes?: number;
+}
+
 export interface ChatMessage {
 	type: 'chat';
 	conversation_id?: string;
 	request_id?: string;
 	content: string;
+	attachments?: Attachment[];
 	live2d?: boolean;
+	need_lipsync?: boolean;
 }
 
 export interface VoiceMessage {
@@ -72,7 +83,24 @@ export interface LipsyncEventMessage {
 	data: { visemes: Viseme[] };
 }
 
-export type EventMessage = EmotionEventMessage | AudioEventMessage | LipsyncEventMessage;
+export interface ToolCallEventMessage {
+	type: 'event';
+	event: 'tool_call';
+	data: { name: string; arguments: string; id?: string };
+}
+
+export interface ToolResultEventMessage {
+	type: 'event';
+	event: 'tool_result';
+	data: { name?: string; id?: string; result?: unknown; error?: string };
+}
+
+export type EventMessage =
+	| EmotionEventMessage
+	| AudioEventMessage
+	| LipsyncEventMessage
+	| ToolCallEventMessage
+	| ToolResultEventMessage;
 
 export interface ErrorMessage {
 	type: 'error';
@@ -88,4 +116,18 @@ export interface ChatEntry {
 	role: 'user' | 'assistant';
 	content: string;
 	pending: boolean;
+	attachments?: Attachment[];
 }
+
+export interface ToolEntry {
+	id: string;
+	role: 'tool';
+	name: string;
+	status: 'running' | 'success' | 'error';
+	args?: string;
+	result?: unknown;
+	error?: string;
+	pending: boolean;
+}
+
+export type MessageEntry = ChatEntry | ToolEntry;

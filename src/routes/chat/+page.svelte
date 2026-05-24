@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { AppShell, Chat, ConversationList, ToolPanel } from '@waifu/ui';
 	import { chatHttpStore } from '$lib/stores/chatHttp.svelte';
+	import { filesToAttachments } from '$lib/backend/attachments';
 
 	let inputValue = $state('');
 	let toolPanelOpen = $state(false);
@@ -10,9 +11,10 @@
 		chatHttpStore.loadConversations();
 	});
 
-	async function handleSend(value: string) {
-		if (!value.trim() || chatHttpStore.sending) return;
-		await chatHttpStore.send(value.trim());
+	async function handleSend(value: string, files?: File[]) {
+		if ((!value.trim() && !files?.length) || chatHttpStore.sending) return;
+		const attachments = files?.length ? await filesToAttachments(files) : undefined;
+		await chatHttpStore.send(value.trim(), attachments);
 	}
 
 	function handleNewConversation() {
@@ -67,8 +69,16 @@
 				{#each chatHttpStore.messages as msg (msg.id)}
 					{#if msg.role === 'user'}
 						<div class="flex justify-end">
-							<Chat.UserBubble content={msg.content} />
+							<Chat.UserBubble content={msg.content} attachments={msg.attachments} />
 						</div>
+					{:else if msg.role === 'tool'}
+						<Chat.ToolCall
+							name={msg.name}
+							status={msg.status}
+							args={msg.args}
+							result={msg.result}
+							error={msg.error}
+						/>
 					{:else}
 						<Chat.AiResult content={msg.content} isStreaming={msg.pending} />
 					{/if}
