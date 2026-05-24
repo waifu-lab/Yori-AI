@@ -55,9 +55,11 @@ fn open_live2d_window<R: Runtime>(app: &tauri::AppHandle<R>) {
 pub fn build_tray<R: Runtime>(app: &App<R>) -> Result<TrayIcon<R>> {
     let tray_menu = build_menu(app)?;
 
-    TrayIconBuilder::new()
-        .menu(&tray_menu)
-        .on_menu_event(|app, event| match event.id().as_ref() {
+    let mut builder = TrayIconBuilder::new().menu(&tray_menu);
+    if let Some(icon) = app.default_window_icon() {
+        builder = builder.icon(icon.clone());
+    }
+    builder.on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
                 open_live2d_window(app);
             }

@@ -13,7 +13,7 @@ tauri-build = { version = "2.5.3", features = [] }
 
 [dependencies]
 # tauri dependencies
-tauri = { version = "2.9.4", features = ["protocol-asset", "tray-icon"] }
+tauri = { version = "2.9.4", features = ["macos-private-api", "protocol-asset", "tray-icon"] }
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 
@@ -65,4 +65,7 @@ wit-bindgen = "0.48.1"
 wasmtime = "39.0.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+windows = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+] }
