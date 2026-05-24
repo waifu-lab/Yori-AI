@@ -119,7 +119,7 @@
 					<span class="text-muted-foreground w-12 text-right text-xs tabular-nums">{live2dStore.scale.toFixed(2)}x</span
 					>
 				</div>
-				<Range min={0.1} max={3} step={0.05} bind:value={live2dStore.scale} />
+				<Range min={0.1} max={4} step={0.05} bind:value={live2dStore.scale} />
 				<div class="text-muted-foreground flex justify-between text-xs">
 					<span>0.1x</span>
 					<span>3x</span>
@@ -131,10 +131,10 @@
 					<label class="text-sm font-medium">水平位移</label>
 					<span class="text-muted-foreground w-16 text-right text-xs tabular-nums">{live2dStore.offsetX}px</span>
 				</div>
-				<Range min={-500} max={500} step={1} bind:value={live2dStore.offsetX} />
+				<Range min={-1000} max={1000} step={1} bind:value={live2dStore.offsetX} />
 				<div class="text-muted-foreground flex justify-between text-xs">
-					<span>-500px</span>
-					<span>+500px</span>
+					<span>-1000px</span>
+					<span>+1000px</span>
 				</div>
 			</div>
 
@@ -143,10 +143,10 @@
 					<label class="text-sm font-medium">垂直位移</label>
 					<span class="text-muted-foreground w-16 text-right text-xs tabular-nums">{live2dStore.offsetY}px</span>
 				</div>
-				<Range min={-500} max={500} step={1} bind:value={live2dStore.offsetY} />
+				<Range min={-1000} max={1000} step={1} bind:value={live2dStore.offsetY} />
 				<div class="text-muted-foreground flex justify-between text-xs">
-					<span>-500px</span>
-					<span>+500px</span>
+					<span>-1000px</span>
+					<span>+1000px</span>
 				</div>
 			</div>
 
