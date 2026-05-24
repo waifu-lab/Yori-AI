@@ -41,8 +41,10 @@ async function ensureLoaded() {
 
 	// WebView2 (Chromium in Tauri) fails with createImageBitmap for cross-origin textures.
 	// Force the legacy <img> loader instead.
-	pixi.loadTextures.config.preferCreateImageBitmap = false;
-	pixi.loadTextures.config.preferWorkers = false;
+	if (pixi.loadTextures.config) {
+		pixi.loadTextures.config.preferCreateImageBitmap = false;
+		pixi.loadTextures.config.preferWorkers = false;
+	}
 
 	const engine = await import('untitled-pixi-live2d-engine');
 	Live2DModel_ = engine.Live2DModel;
@@ -61,6 +63,7 @@ export async function initApp(container: HTMLElement): Promise<Application> {
 		preference: 'webgl',
 		backgroundAlpha: 0,
 		autoDensity: true,
+		antialias: true,
 		resolution: window.devicePixelRatio || 1
 	});
 
@@ -102,8 +105,7 @@ function watchDevicePixelRatio() {
 }
 
 function logicalSize() {
-	const dpr = window.devicePixelRatio || 1;
-	return { w: window.innerWidth / dpr, h: window.innerHeight / dpr };
+	return { w: window.innerWidth, h: window.innerHeight };
 }
 
 function repositionModel() {
@@ -202,9 +204,8 @@ export function getModelBounds(): { cx: number; cy: number; hw: number; hh: numb
 }
 
 /**
- * Hit-test a point in Pixi (logical) pixel coordinates against the model's named hit areas.
+ * Hit-test a point in Pixi/CSS pixel coordinates against the model's named hit areas.
  * Returns an array of hit-area names (e.g. ["Head", "Body"]).
- * Pixi coords = CSS clientX / devicePixelRatio.
  */
 export function hitTestAt(pixiX: number, pixiY: number): string[] {
 	if (!currentModel) return [];

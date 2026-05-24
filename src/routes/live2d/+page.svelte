@@ -43,9 +43,8 @@
 
 	function handlePetMove(e: MouseEvent) {
 		const now = performance.now();
-		const dpr = window.devicePixelRatio || 1;
-		const pixiX = e.clientX / dpr;
-		const pixiY = e.clientY / dpr;
+		const pixiX = e.clientX;
+		const pixiY = e.clientY;
 
 		const bounds = getModelBounds();
 		const inBounds =

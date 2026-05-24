@@ -11,9 +11,41 @@ fn cursor_pos() -> Option<(i32, i32)> {
     unsafe { GetCursorPos(&mut p).ok().map(|_| (p.x, p.y)) }
 }
 
-#[cfg(not(target_os = "windows"))]
-fn cursor_pos() -> Option<(i32, i32)> {
-    None
+#[cfg(target_os = "macos")]
+mod macos_cursor {
+    use std::ffi::c_void;
+
+    #[repr(C)]
+    #[derive(Copy, Clone)]
+    pub struct CGPoint {
+        pub x: f64,
+        pub y: f64,
+    }
+
+    #[link(name = "CoreGraphics", kind = "framework")]
+    unsafe extern "C" {
+        pub fn CGEventCreate(source: *mut c_void) -> *mut c_void;
+        pub fn CGEventGetLocation(event: *mut c_void) -> CGPoint;
+        pub fn CFRelease(cf: *const c_void);
+    }
+}
+
+/// Returns cursor position in CoreGraphics logical points.
+/// (0, 0) is the top-left of the main display, y increases downward —
+/// same origin as Tauri's outer_position() before scale is applied.
+#[cfg(target_os = "macos")]
+fn cursor_pos_logical() -> Option<(f64, f64)> {
+    use macos_cursor::*;
+    use std::ptr;
+    unsafe {
+        let event = CGEventCreate(ptr::null_mut());
+        if event.is_null() {
+            return None;
+        }
+        let pt = CGEventGetLocation(event);
+        CFRelease(event.cast());
+        Some((pt.x, pt.y))
+    }
 }
 
 /// Returns how long ago the user last moved the mouse or pressed a key.
@@ -64,14 +96,11 @@ pub fn start_mouse_tracker<R: Runtime + 'static>(app: AppHandle<R>) {
                 }
             }
 
-            let Some((cx, cy)) = cursor_pos() else {
-                continue;
-            };
             let Some(win) = app.get_webview_window("live2d-preview") else {
                 continue;
             };
 
-            if win.is_visible().unwrap_or(false) == false {
+            if !win.is_visible().unwrap_or(false) {
                 continue;
             }
 
@@ -84,6 +113,24 @@ pub fn start_mouse_tracker<R: Runtime + 'static>(app: AppHandle<R>) {
             if size.width == 0 || size.height == 0 {
                 continue;
             }
+
+            // Obtain cursor position in the same physical-pixel coordinate space as
+            // Tauri's outer_position(). On macOS, CGEventGetLocation returns logical
+            // points; we convert using the window's DPI scale factor (avoids calling
+            // the deprecated CGDisplayScaleFactor which was removed in macOS 26).
+            #[cfg(target_os = "macos")]
+            let cursor = {
+                let scale = win.scale_factor().unwrap_or(1.0);
+                cursor_pos_logical().map(|(lx, ly)| ((lx * scale) as i32, (ly * scale) as i32))
+            };
+            #[cfg(target_os = "windows")]
+            let cursor = cursor_pos();
+            #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+            let cursor: Option<(i32, i32)> = None;
+
+            let Some((cx, cy)) = cursor else {
+                continue;
+            };
 
             let px = (cx - pos.x) as f64;
             let py = (cy - pos.y) as f64;
