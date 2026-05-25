@@ -23,6 +23,7 @@ export { default as StepIndicator } from './molecules/StepIndicator.svelte';
 export { default as MarkdownRenderer } from './molecules/MarkdownRenderer.svelte';
 export { default as ConversationList } from './molecules/ConversationList.svelte';
 export { default as ToolPanel } from './molecules/ToolPanel.svelte';
+export { default as GalDialogue } from './molecules/GalDialogue.svelte';
 export * as Chat from './molecules/chat/index.js';
 export * as Setting from './molecules/setting/index.js';
 

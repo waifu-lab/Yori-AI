@@ -92,13 +92,13 @@ pub fn start_mouse_tracker<R: Runtime + 'static>(app: AppHandle<R>) {
                     is_idle = true;
                     let _ = app.emit("user-idle", ());
                     if let Some(ws) = app.try_state::<BackendWs>() {
-                        let _ = ws.send(ClientMsg::UserEvent(UserEventMsg { event: "idle".into(), data: None }));
+                        let _ = ws.send(ClientMsg::UserEvent(UserEventMsg { name: "idle".into(), data: serde_json::json!({}) }));
                     }
                 } else if !should_be_idle && is_idle {
                     is_idle = false;
                     let _ = app.emit("user-active", ());
                     if let Some(ws) = app.try_state::<BackendWs>() {
-                        let _ = ws.send(ClientMsg::UserEvent(UserEventMsg { event: "active".into(), data: None }));
+                        let _ = ws.send(ClientMsg::UserEvent(UserEventMsg { name: "active".into(), data: serde_json::json!({}) }));
                     }
                 }
             }

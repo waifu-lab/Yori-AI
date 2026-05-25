@@ -95,12 +95,19 @@ export interface ToolResultEventMessage {
 	data: { name?: string; id?: string; result?: unknown; error?: string };
 }
 
+export interface DialogueEventMessage {
+	type: 'event';
+	event: 'dialogue';
+	data: { name?: string; text: string };
+}
+
 export type EventMessage =
 	| EmotionEventMessage
 	| AudioEventMessage
 	| LipsyncEventMessage
 	| ToolCallEventMessage
-	| ToolResultEventMessage;
+	| ToolResultEventMessage
+	| DialogueEventMessage;
 
 export interface ErrorMessage {
 	type: 'error';

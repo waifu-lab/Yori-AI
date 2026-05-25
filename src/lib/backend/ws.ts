@@ -43,8 +43,8 @@ export function sendLive2dSync(expressions: string[]): Promise<void> {
 	return invoke('backend_send_live2d_sync', { expressions });
 }
 
-export function sendUserEvent(event: string, data?: Record<string, unknown>): Promise<void> {
-	return invoke('backend_send_user_event', { event, data: data ?? null });
+export function sendUserEvent(name: string, data?: Record<string, unknown>): Promise<void> {
+	return invoke('backend_send_user_event', { name, data: data ?? null });
 }
 
 export function onLive2dSyncAck(cb: (msg: Live2dSyncAckMessage) => void): Promise<UnlistenFn> {

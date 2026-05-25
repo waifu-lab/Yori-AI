@@ -3,6 +3,7 @@
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
 	import { onEvent, sendLive2dSync, sendUserEvent } from '$lib/backend/ws';
+	import { GalDialogue } from '@waifu/ui';
 	import {
 		getCurrentModelUrl,
 		getLive2dTransform,
@@ -82,6 +83,10 @@
 	let unlistenEvent: UnlistenFn | null = null;
 	let unlistenIdle: UnlistenFn | null = null;
 	let unlistenTransform: UnlistenFn | null = null;
+
+	let dialogueOpen = $state(false);
+	let dialogueName = $state('');
+	let dialogueText = $state('');
 
 	function openSettings() {
 		openSettingsWindow().catch(console.error);
@@ -188,6 +193,10 @@
 				playAudio(msg.data.audio, msg.data.format, msg.data.duration_ms);
 			} else if (msg.event === 'lipsync' && needsBackendLipsync()) {
 				attachLipsyncToLast(msg.data.visemes);
+			} else if (msg.event === 'dialogue') {
+				dialogueName = msg.data.name ?? '';
+				dialogueText = msg.data.text;
+				dialogueOpen = true;
 			}
 		});
 
@@ -219,6 +228,8 @@
 </script>
 
 <div bind:this={container}></div>
+
+<GalDialogue bind:open={dialogueOpen} name={dialogueName} text={dialogueText} />
 
 <aside class="sidebar">
 	<button class="icon-btn drag-btn" title="拖動視窗" onmousedown={onDragMouseDown} style="margin-top: auto;">

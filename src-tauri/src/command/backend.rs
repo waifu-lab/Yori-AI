@@ -97,11 +97,11 @@ pub fn backend_send_live2d_sync(
 
 #[tauri::command]
 pub fn backend_send_user_event(
-    event: String,
+    name: String,
     data: Option<serde_json::Value>,
     ws: State<BackendWs>,
 ) -> Result<(), String> {
-    ws.send(ClientMsg::UserEvent(UserEventMsg { event, data }))
+    ws.send(ClientMsg::UserEvent(UserEventMsg { name, data: data.unwrap_or(serde_json::json!({})) }))
 }
 
 #[tauri::command]
