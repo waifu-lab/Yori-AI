@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+	import { listen, emit, type UnlistenFn } from '@tauri-apps/api/event';
 	import { Setting } from '@waifu/ui';
+
+	let dialogueName = $state('Yori');
+	let dialogueText = $state('嗨！這是一個測試對話框。點擊可以關閉或跳過打字動畫。');
+
+	async function triggerDialogue() {
+		await emit('show-dialogue', { name: dialogueName || undefined, text: dialogueText });
+	}
 
 	let db = $state(-100);
 	// Map dB range [-60, 0] to [0, 100]
@@ -49,6 +56,35 @@
 </script>
 
 <div class="flex flex-col gap-3">
+	<Setting.Card
+		title="對話框測試"
+		icon="icon-[material-symbols--chat-bubble-outline-rounded]"
+		description="發送測試對話到 Live2D 視窗"
+	>
+		<div class="flex flex-col gap-2">
+			<div class="flex gap-2">
+				<input
+					class="bg-surface text-foreground border-border focus:border-primary flex-1 rounded-md border px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+					placeholder="角色名稱（可留空）"
+					bind:value={dialogueName}
+				/>
+			</div>
+			<textarea
+				class="bg-surface text-foreground border-border focus:border-primary w-full resize-none rounded-md border px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+				rows="2"
+				placeholder="對話內容"
+				bind:value={dialogueText}
+			></textarea>
+			<button
+				class="bg-primary hover:brightness-110 flex items-center gap-1.5 self-end rounded-md px-3 py-1.5 text-sm font-semibold text-white transition-all"
+				onclick={triggerDialogue}
+			>
+				<span class="icon-[material-symbols--play-arrow-rounded]"></span>
+				顯示對話
+			</button>
+		</div>
+	</Setting.Card>
+
 	<Setting.Card
 		title="麥克風音量"
 		icon="icon-[material-symbols--graphic-eq-rounded]"

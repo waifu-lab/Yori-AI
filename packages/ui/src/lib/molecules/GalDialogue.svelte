@@ -6,6 +6,7 @@
 		name?: string;
 		text?: string;
 		typingSpeed?: number;
+		autoCloseMs?: number;
 		onDismiss?: () => void;
 		class?: string;
 	}
@@ -15,23 +16,37 @@
 		name = '',
 		text = '',
 		typingSpeed = 40,
+		autoCloseMs = 10_000,
 		onDismiss,
 		class: className = ''
 	}: Props = $props();
 
 	let displayed = $state('');
 	let done = $state(false);
-	let timer: ReturnType<typeof setTimeout> | null = null;
+	let typingTimer: ReturnType<typeof setTimeout> | null = null;
+	let autoCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
-	function clearTimer() {
-		if (timer !== null) {
-			clearTimeout(timer);
-			timer = null;
+	function clearTypingTimer() {
+		if (typingTimer !== null) { clearTimeout(typingTimer); typingTimer = null; }
+	}
+
+	function clearAutoCloseTimer() {
+		if (autoCloseTimer !== null) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
+	}
+
+	function startAutoClose() {
+		clearAutoCloseTimer();
+		if (autoCloseMs > 0) {
+			autoCloseTimer = setTimeout(() => {
+				open = false;
+				onDismiss?.();
+			}, autoCloseMs);
 		}
 	}
 
 	function startTyping(fullText: string) {
-		clearTimer();
+		clearTypingTimer();
+		clearAutoCloseTimer();
 		displayed = '';
 		done = false;
 		let i = 0;
@@ -39,24 +54,27 @@
 		function tick() {
 			if (i < fullText.length) {
 				displayed = fullText.slice(0, ++i);
-				timer = setTimeout(tick, typingSpeed);
+				typingTimer = setTimeout(tick, typingSpeed);
 			} else {
 				done = true;
+				startAutoClose();
 			}
 		}
 		tick();
 	}
 
 	function finish() {
-		clearTimer();
+		clearTypingTimer();
 		displayed = text;
 		done = true;
+		startAutoClose();
 	}
 
 	function handleClick() {
 		if (!done) {
 			finish();
 		} else {
+			clearAutoCloseTimer();
 			open = false;
 			onDismiss?.();
 		}
@@ -67,6 +85,7 @@
 			e.preventDefault();
 			handleClick();
 		} else if (e.key === 'Escape') {
+			clearAutoCloseTimer();
 			open = false;
 			onDismiss?.();
 		}
@@ -76,13 +95,17 @@
 		if (open && text) {
 			startTyping(text);
 		} else if (!open) {
-			clearTimer();
+			clearTypingTimer();
+			clearAutoCloseTimer();
 			displayed = '';
 			done = false;
 		}
 	});
 
-	onDestroy(clearTimer);
+	onDestroy(() => {
+		clearTypingTimer();
+		clearAutoCloseTimer();
+	});
 </script>
 
 {#if open}
@@ -112,31 +135,8 @@
 {/if}
 
 <style>
-	/* Dark mode defaults (galgame is inherently dark-first) */
+	/* Light mode defaults */
 	.gal-dialogue {
-		--gal-bg-start: rgba(4, 4, 12, 0.88);
-		--gal-bg-end: rgba(8, 8, 20, 0.92);
-		--gal-border: color-mix(in srgb, var(--color-primary) 35%, rgba(255, 255, 255, 0.08));
-		--gal-inset: rgba(255, 255, 255, 0.04);
-		--gal-shadow-drop: rgba(0, 0, 0, 0.5);
-		--gal-gloss: rgba(255, 255, 255, 0.03);
-		--gal-text: rgba(255, 255, 255, 0.92);
-		--gal-text-shadow: rgba(0, 0, 0, 0.6);
-
-		position: fixed;
-		bottom: 2rem;
-		left: 50%;
-		transform: translateX(-50%);
-		width: min(760px, calc(100vw - 3rem));
-		z-index: 100;
-		cursor: pointer;
-		user-select: none;
-		outline: none;
-		animation: gal-in 0.2s ease-out both;
-	}
-
-	/* Light mode overrides */
-	:global([data-theme='light']) .gal-dialogue {
 		--gal-bg-start: rgba(252, 252, 255, 0.88);
 		--gal-bg-end: rgba(245, 245, 252, 0.93);
 		--gal-border: color-mix(in srgb, var(--color-primary) 30%, rgba(0, 0, 0, 0.1));
@@ -145,6 +145,30 @@
 		--gal-gloss: rgba(255, 255, 255, 0.5);
 		--gal-text: rgba(10, 10, 20, 0.9);
 		--gal-text-shadow: rgba(0, 0, 0, 0.08);
+		--gal-right-offset: 0px;
+
+		position: fixed;
+		bottom: 2rem;
+		left: 50%;
+		transform: translateX(calc(-50% - var(--gal-right-offset) / 2));
+		width: min(760px, calc(100vw - 3rem - var(--gal-right-offset)));
+		z-index: 100;
+		cursor: pointer;
+		user-select: none;
+		outline: none;
+		animation: gal-in 0.2s ease-out both;
+	}
+
+	/* Dark mode overrides */
+	:global([data-theme='dark']) .gal-dialogue {
+		--gal-bg-start: rgba(4, 4, 12, 0.88);
+		--gal-bg-end: rgba(8, 8, 20, 0.92);
+		--gal-border: color-mix(in srgb, var(--color-primary) 35%, rgba(255, 255, 255, 0.08));
+		--gal-inset: rgba(255, 255, 255, 0.04);
+		--gal-shadow-drop: rgba(0, 0, 0, 0.5);
+		--gal-gloss: rgba(255, 255, 255, 0.03);
+		--gal-text: rgba(255, 255, 255, 0.92);
+		--gal-text-shadow: rgba(0, 0, 0, 0.6);
 	}
 
 	@keyframes gal-in {

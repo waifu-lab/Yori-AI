@@ -29,8 +29,8 @@
 	} from '$lib/live2d/renderer';
 
 	const PET_WINDOW_MS = 1000;
-	const PET_MIN_REVERSALS = 3;
-	const PET_COOLDOWN_MS = 3000;
+	const PET_MIN_REVERSALS = 5;
+	const PET_COOLDOWN_MS = 1500;
 	const PET_MIN_DELTA_PX = 6;
 
 	let petReversals: number[] = [];
@@ -200,16 +200,31 @@
 			}
 		});
 
-		const unlistenIdleEvt = await listen('user-idle', () => {
-			import('@tauri-apps/api/event').then(({ emit }) => emit('user-idle-forward', {})).catch(() => {});
-		});
-		const unlistenActiveEvt = await listen('user-active', () => {
-			import('@tauri-apps/api/event').then(({ emit }) => emit('user-active-forward', {})).catch(() => {});
-		});
-		unlistenIdle = () => {
-			unlistenIdleEvt();
-			unlistenActiveEvt();
-		};
+		unlistenIdle = (() => {
+			let unlistenIdleEvt: (() => void) | null = null;
+			let unlistenActiveEvt: (() => void) | null = null;
+			let unlistenDialogueEvt: (() => void) | null = null;
+
+			Promise.all([
+				listen('user-idle', () => {
+					import('@tauri-apps/api/event').then(({ emit }) => emit('user-idle-forward', {})).catch(() => {});
+				}).then(fn => { unlistenIdleEvt = fn; }),
+				listen('user-active', () => {
+					import('@tauri-apps/api/event').then(({ emit }) => emit('user-active-forward', {})).catch(() => {});
+				}).then(fn => { unlistenActiveEvt = fn; }),
+				listen<{ name?: string; text: string }>('show-dialogue', (e) => {
+					dialogueName = e.payload.name ?? '';
+					dialogueText = e.payload.text;
+					dialogueOpen = true;
+				}).then(fn => { unlistenDialogueEvt = fn; }),
+			]);
+
+			return () => {
+				unlistenIdleEvt?.();
+				unlistenActiveEvt?.();
+				unlistenDialogueEvt?.();
+			};
+		})();
 
 		// Pet detection: track horizontal oscillation over the model.
 		window.addEventListener('mousemove', handlePetMove);
@@ -229,7 +244,9 @@
 
 <div bind:this={container}></div>
 
-<GalDialogue bind:open={dialogueOpen} name={dialogueName} text={dialogueText} />
+<div style="--gal-right-offset: 48px">
+	<GalDialogue bind:open={dialogueOpen} name={dialogueName} text={dialogueText} />
+</div>
 
 <aside class="sidebar">
 	<button class="icon-btn drag-btn" title="拖動視窗" onmousedown={onDragMouseDown} style="margin-top: auto;">
