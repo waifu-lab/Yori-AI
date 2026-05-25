@@ -24,7 +24,7 @@
 		{/if}
 	</div>
 
-	<div class="border-border flex-shrink-0 border-t">
+	<div class="flex-shrink-0">
 		{#if input}
 			{@render input()}
 		{/if}

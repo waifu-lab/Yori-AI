@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { invoke } from '@tauri-apps/api/core';
 	import { AppShell, Chat, ConversationList, ToolPanel } from '@waifu/ui';
 	import { chatHttpStore } from '$lib/stores/chatHttp.svelte';
 	import { filesToAttachments } from '$lib/backend/attachments';
@@ -38,6 +39,7 @@
 			activeId={chatHttpStore.activeConversationId ?? ''}
 			onSelect={(id) => chatHttpStore.selectConversation(id)}
 			onNew={handleNewConversation}
+			onSettings={() => invoke('open_settings_window')}
 		/>
 	</AppShell.Sidebar>
 
