@@ -9,6 +9,6 @@
 	let { source, class: className = '' }: Props = $props();
 </script>
 
-<div class="prose prose-edit {className}">
+<div class="prose prose-edit dark:prose-invert {className}">
 	<SvelteMarkdown {source} />
 </div>
