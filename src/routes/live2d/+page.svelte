@@ -2,7 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
-	import { onEvent, sendLive2dSync } from '$lib/backend/ws';
+	import { onEvent, sendLive2dSync, sendUserEvent } from '$lib/backend/ws';
 	import {
 		getCurrentModelUrl,
 		getLive2dTransform,
@@ -38,7 +38,7 @@
 	let petCooldownUntil = 0;
 
 	function onPetDetected(areas: string[]) {
-		import('@tauri-apps/api/event').then(({ emit }) => emit('pet-detected', { areas })).catch(() => {});
+		sendUserEvent('pet', { areas }).catch(() => {});
 	}
 
 	function handlePetMove(e: MouseEvent) {

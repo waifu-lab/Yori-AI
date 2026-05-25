@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::backend::{
     BackendWs,
-    types::{Attachment, ChatMsg, ClientMsg, Live2dSyncMsg, VoiceMsg},
+    types::{Attachment, ChatMsg, ClientMsg, Live2dSyncMsg, UserEventMsg, VoiceMsg},
 };
 
 use crate::core::state::{AppState, STORE_KEY_BACKEND_URL};
@@ -93,6 +93,15 @@ pub fn backend_send_live2d_sync(
     ws: State<BackendWs>,
 ) -> Result<(), String> {
     ws.send(ClientMsg::Live2dsync(Live2dSyncMsg { expressions }))
+}
+
+#[tauri::command]
+pub fn backend_send_user_event(
+    event: String,
+    data: Option<serde_json::Value>,
+    ws: State<BackendWs>,
+) -> Result<(), String> {
+    ws.send(ClientMsg::UserEvent(UserEventMsg { event, data }))
 }
 
 #[tauri::command]

@@ -49,6 +49,7 @@ fn main() {
             command::backend::backend_send_chat,
             command::backend::backend_send_voice,
             command::backend::backend_send_live2d_sync,
+            command::backend::backend_send_user_event,
             command::backend::live2d_set_lipsync_mode,
             // audio
             command::audio::audio_play,

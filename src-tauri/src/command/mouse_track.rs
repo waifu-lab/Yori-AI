@@ -1,5 +1,6 @@
 use std::{thread, time::Duration};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
+use crate::backend::{BackendWs, types::{ClientMsg, UserEventMsg}};
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(3 * 60);
 
@@ -90,9 +91,15 @@ pub fn start_mouse_tracker<R: Runtime + 'static>(app: AppHandle<R>) {
                 if should_be_idle && !is_idle {
                     is_idle = true;
                     let _ = app.emit("user-idle", ());
+                    if let Some(ws) = app.try_state::<BackendWs>() {
+                        let _ = ws.send(ClientMsg::UserEvent(UserEventMsg { event: "idle".into(), data: None }));
+                    }
                 } else if !should_be_idle && is_idle {
                     is_idle = false;
                     let _ = app.emit("user-active", ());
+                    if let Some(ws) = app.try_state::<BackendWs>() {
+                        let _ = ws.send(ClientMsg::UserEvent(UserEventMsg { event: "active".into(), data: None }));
+                    }
                 }
             }
 

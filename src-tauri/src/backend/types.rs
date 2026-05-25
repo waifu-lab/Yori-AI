@@ -6,6 +6,15 @@ pub enum ClientMsg {
     Chat(ChatMsg),
     Voice(VoiceMsg),
     Live2dsync(Live2dSyncMsg),
+    #[serde(rename = "event")]
+    UserEvent(UserEventMsg),
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UserEventMsg {
+    pub event: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize)]
