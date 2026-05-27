@@ -113,6 +113,13 @@ class ChatHttpStore {
 		this.messages = [];
 	}
 
+	updateConversationTitle(conversationId: string, title: string) {
+		const idx = this.conversations.findIndex((c) => c.id === conversationId);
+		if (idx !== -1) {
+			this.conversations[idx] = { ...this.conversations[idx], title };
+		}
+	}
+
 	async send(content: string, attachments?: Attachment[]) {
 		if (this.sending) return;
 
@@ -202,6 +209,8 @@ class ChatHttpStore {
 					this.upsertToolCall(evt.data);
 				} else if (evt.event === 'tool_result') {
 					this.resolveToolResult(evt.data);
+				} else if (evt.event === 'title_update') {
+					this.updateConversationTitle(evt.data.conversation_id, evt.data.title);
 				}
 			}
 		}, attachments);

@@ -101,13 +101,20 @@ export interface DialogueEventMessage {
 	data: { name?: string; text: string };
 }
 
+export interface TitleUpdateEventMessage {
+	type: 'event';
+	event: 'title_update';
+	data: { conversation_id: string; title: string };
+}
+
 export type EventMessage =
 	| EmotionEventMessage
 	| AudioEventMessage
 	| LipsyncEventMessage
 	| ToolCallEventMessage
 	| ToolResultEventMessage
-	| DialogueEventMessage;
+	| DialogueEventMessage
+	| TitleUpdateEventMessage;
 
 export interface ErrorMessage {
 	type: 'error';
