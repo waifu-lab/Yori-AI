@@ -9,6 +9,59 @@ function normalizeAttachments(raw: unknown): Attachment[] | undefined {
 	});
 }
 
+type HistoryPart =
+	| { type: 'text'; text?: string }
+	| { type: 'tool-call'; toolCallId?: string; toolName?: string; name?: string; args?: unknown; arguments?: unknown }
+	| { type: 'tool-result'; toolCallId?: string; toolName?: string; name?: string; result?: unknown; error?: string }
+	| { type: string; [key: string]: unknown };
+
+function parseHistoryMessage(
+	m: {
+		id: string;
+		role: 'user' | 'assistant' | 'tool';
+		content?: string;
+		parts?: unknown[];
+		attachments?: unknown;
+	}
+): MessageEntry {
+	const parts = (m.parts as HistoryPart[] | undefined) ?? [];
+
+	if (m.role === 'tool') {
+		const toolCall = parts.find((part) => part.type === 'tool-call') as Extract<HistoryPart, { type: 'tool-call' }> | undefined;
+		const toolResult = parts.find((part) => part.type === 'tool-result') as Extract<HistoryPart, { type: 'tool-result' }> | undefined;
+		const toolArgs = toolCall?.arguments ?? toolCall?.args;
+		const result = toolResult?.result;
+		const error = toolResult?.error;
+
+		return {
+			id: toolCall?.toolCallId ?? toolResult?.toolCallId ?? m.id,
+			role: 'tool',
+			name: toolCall?.toolName ?? toolCall?.name ?? toolResult?.toolName ?? toolResult?.name ?? toolResult?.toolCallId ?? 'tool',
+			status: toolResult ? (error ? 'error' : 'success') : 'running',
+			args: typeof toolArgs === 'string' ? toolArgs : toolArgs != null ? JSON.stringify(toolArgs) : undefined,
+			result,
+			error,
+			pending: !toolResult
+		};
+	}
+
+	const content =
+		parts
+			.filter((part): part is Extract<HistoryPart, { type: 'text' }> => part.type === 'text')
+			.map((part) => part.text ?? '')
+			.join('') ||
+		m.content ||
+		'';
+
+	return {
+		id: m.id,
+		role: m.role,
+		content,
+		pending: false,
+		attachments: normalizeAttachments(m.attachments)
+	};
+}
+
 export type { ChatEntry, ConversationItem, MessageEntry, ToolEntry };
 
 class ChatHttpStore {
@@ -86,23 +139,7 @@ class ChatHttpStore {
 		this.messages = [];
 		try {
 			const history = await getConversationMessages(id);
-			this.messages = history.map<MessageEntry>((m) => {
-				const parts = m.parts as Array<{ type: string; text?: string }> | undefined;
-				const content =
-					parts
-						?.filter((p) => p.type === 'text')
-						.map((p) => p.text ?? '')
-						.join('') ??
-					(m.content as string | undefined) ??
-					'';
-				return {
-					id: m.id,
-					role: m.role,
-					content,
-					pending: false,
-					attachments: normalizeAttachments(m.attachments)
-				};
-			});
+			this.messages = history.map<MessageEntry>((m) => parseHistoryMessage(m));
 		} catch (e) {
 			console.error('[http] loadMessages:', e);
 		}

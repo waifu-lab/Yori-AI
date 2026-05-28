@@ -36,8 +36,9 @@ export interface ConversationItem {
 
 export interface HistoryMessage {
 	id: string;
-	role: 'user' | 'assistant';
+	role: 'user' | 'assistant' | 'tool';
 	content: string;
+	parts?: unknown[];
 	created_at?: string;
 	[key: string]: unknown;
 }
