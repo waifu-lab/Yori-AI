@@ -1,5 +1,5 @@
 use serde_json::Value;
-use waifu_shared::{NodeError, NodeInvoke, NodeResult};
+use waifu_shared::{CapabilityResult, NodeError, NodeInvoke, NodeResult};
 
 use crate::capability;
 
@@ -7,11 +7,12 @@ pub async fn handle_invoke(invoke: &NodeInvoke) -> NodeResult {
     let result = dispatch_action(&invoke.action, &invoke.params).await;
 
     match result {
-        Ok(data) => NodeResult {
+        Ok(cap) => NodeResult {
             msg_type: "node_result".into(),
             request_id: invoke.request_id,
             ok: true,
-            data: Some(data),
+            data: Some(cap.data),
+            attachments: if cap.attachments.is_empty() { None } else { Some(cap.attachments) },
             error: None,
         },
         Err(e) => NodeResult {
@@ -19,15 +20,20 @@ pub async fn handle_invoke(invoke: &NodeInvoke) -> NodeResult {
             request_id: invoke.request_id,
             ok: false,
             data: None,
+            attachments: None,
             error: Some(e),
         },
     }
 }
 
-async fn dispatch_action(action: &str, params: &Value) -> Result<Value, NodeError> {
+async fn dispatch_action(action: &str, params: &Value) -> Result<CapabilityResult, NodeError> {
     match action {
         // screen
         "screenshot" => capability::screen::screenshot(params).await,
+
+        // window
+        "active_window" => capability::window::active_window(params).await,
+        "window_list" => capability::window::window_list(params).await,
 
         // exec
         "exec" => capability::exec::exec(params).await,

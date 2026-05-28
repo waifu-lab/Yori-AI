@@ -9,46 +9,29 @@ path = "src/main.rs"
 
 [dependencies]
 waifu-shared = { path = "../waifu-shared" }
-
-# async runtime
 tokio = { version = "1", features = ["full"] }
-
-# WebSocket
 tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
 futures-util = "0.3"
-
-# serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
-
-# screen capture
 xcap = "0.0.14"
 base64 = "0.22"
-
-# audio
 cpal = "0.15"
-
-# system info
 sysinfo = "0.30"
-
-# keyboard / mouse
 enigo = "0.2"
-
-# skill sync
-reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }
+reqwest = { version = "0.12", features = [
+    "rustls-tls",
+], default-features = false }
 sha2 = "0.10"
-
-# hostname
 hostname = "0.4"
-
-# error handling
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.57", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+] }
 anyhow = "1"
 thiserror = "2"
-
-# CLI args
 clap = { version = "4", features = ["derive"] }
-
-# logging
 log = "0.4"
 env_logger = "0.11"

@@ -2,8 +2,8 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
-	import { onEvent, sendLive2dSync, sendUserEvent } from '$lib/backend/ws';
 	import { GalDialogue } from '@waifu/ui';
+	import { onEvent, sendLive2dSync, sendUserEvent } from '$lib/backend/ws';
 	import {
 		getCurrentModelUrl,
 		getLive2dTransform,
@@ -37,12 +37,14 @@
 	let petLastDir = 0;
 	let petLastX = 0;
 	let petCooldownUntil = 0;
+	let isDragging = false;
 
 	function onPetDetected(areas: string[]) {
 		sendUserEvent('pet', { areas }).catch(() => {});
 	}
 
 	function handlePetMove(e: MouseEvent) {
+		if (isDragging) return;
 		const now = performance.now();
 		const pixiX = e.clientX;
 		const pixiY = e.clientY;
@@ -102,6 +104,7 @@
 
 	async function onDragMouseDown(e: MouseEvent) {
 		if (e.button !== 0) return;
+		isDragging = true;
 		const win = getCurrentWindow();
 		const pos = await win.outerPosition();
 		const startWinX = pos.x;
@@ -125,6 +128,7 @@
 		}
 
 		function onMouseUp() {
+			isDragging = false;
 			if (rafId !== null) {
 				cancelAnimationFrame(rafId);
 				rafId = null;

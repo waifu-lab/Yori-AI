@@ -8162,6 +8162,7 @@ dependencies = [
  "tokio-tungstenite 0.21.0",
  "uuid",
  "waifu-shared",
+ "windows 0.57.0",
  "xcap",
 ]
 
