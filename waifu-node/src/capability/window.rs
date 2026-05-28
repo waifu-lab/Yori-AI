@@ -1,24 +1,22 @@
 use serde_json::{json, Value};
-use waifu_shared::{CapabilityResult, NodeError};
+use waifu_shared::NodeError;
 
-pub async fn active_window(_params: &Value) -> Result<CapabilityResult, NodeError> {
+pub async fn active_window(_params: &Value) -> Result<Value, NodeError> {
     tokio::task::spawn_blocking(get_active_window)
         .await
         .map_err(|e| NodeError {
             code: "WINDOW_ERROR".into(),
             message: e.to_string(),
         })?
-        .map(CapabilityResult::data)
 }
 
-pub async fn window_list(_params: &Value) -> Result<CapabilityResult, NodeError> {
+pub async fn window_list(_params: &Value) -> Result<Value, NodeError> {
     tokio::task::spawn_blocking(get_window_list)
         .await
         .map_err(|e| NodeError {
             code: "WINDOW_ERROR".into(),
             message: e.to_string(),
         })?
-        .map(CapabilityResult::data)
 }
 
 #[cfg(target_os = "windows")]
