@@ -7,6 +7,7 @@ export { default as Input } from './atoms/Input.svelte';
 export { default as Textarea } from './atoms/Textarea.svelte';
 export { default as Checkbox } from './atoms/Checkbox.svelte';
 export { default as CheckboxGroup } from './atoms/CheckboxGroup.svelte';
+export { default as Switch } from './atoms/Switch.svelte';
 export { default as Range } from './atoms/Range.svelte';
 export { default as Select } from './atoms/Select.svelte';
 export { default as Field } from './atoms/Field.svelte';

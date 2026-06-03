@@ -23,7 +23,7 @@
 		</div>
 	</div>
 
-	<div class="flex flex-col gap-3 px-4">
+	<div class="flex flex-col gap-3 px-4 pb-8">
 		{@render children()}
 	</div>
 </div>
