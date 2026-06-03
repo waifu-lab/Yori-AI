@@ -29,10 +29,7 @@ pub async fn exec(params: &Value) -> Result<Value, NodeError> {
         .and_then(|v| v.as_u64())
         .unwrap_or(10_000);
 
-    let cwd = params
-        .get("cwd")
-        .and_then(|v| v.as_str())
-        .map(String::from);
+    let cwd = params.get("cwd").and_then(|v| v.as_str()).map(String::from);
 
     run_command(cmd, args, timeout_ms, cwd).await
 }

@@ -26,6 +26,9 @@ pub async fn handle_invoke(invoke: &NodeInvoke) -> NodeResult {
 
 async fn dispatch_action(action: &str, params: &Value) -> Result<Value, NodeError> {
     match action {
+        // screen
+        "screenshot" => capability::screen::screenshot(params).await,
+
         // window
         "active_window" => capability::window::active_window(params).await,
         "window_list" => capability::window::window_list(params).await,

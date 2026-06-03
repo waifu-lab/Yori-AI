@@ -21,8 +21,24 @@ pub fn build_tool_schemas(caps: &[String]) -> Vec<ToolSchema> {
 fn screen_tools() -> Vec<ToolSchema> {
     vec![
         ToolSchema {
+            name: "screenshot".into(),
+            description: "Capture a screenshot of a display and return a base64-encoded PNG."
+                .into(),
+            parameters: json!({
+                "type": "object",
+                "properties": {
+                    "display": {
+                        "type": "integer",
+                        "description": "Display index to capture. 0 = first/primary monitor. Defaults to 0.",
+                        "default": 0
+                    }
+                }
+            }),
+        },
+        ToolSchema {
             name: "active_window".into(),
-            description: "Get the currently focused window: title, process name, and process ID.".into(),
+            description: "Get the currently focused window: title, process name, and process ID."
+                .into(),
             parameters: json!({ "type": "object", "properties": {} }),
         },
         ToolSchema {
