@@ -1,7 +1,13 @@
 use base64::Engine;
 use serde_json::{json, Value};
 use waifu_shared::NodeError;
+use xcap::image::codecs::jpeg::JpegEncoder;
+use xcap::image::{DynamicImage, ImageEncoder};
 use xcap::Monitor;
+
+const MAX_WIDTH: u32 = 800;
+const MAX_HEIGHT: u32 = 450;
+const JPEG_QUALITY: u8 = 70;
 
 pub async fn screenshot(params: &Value) -> Result<Value, NodeError> {
     let display_idx = parse_display(params)?;
@@ -61,30 +67,48 @@ fn capture(display_idx: i64) -> Result<Value, NodeError> {
         })?
     };
 
-    let image = monitor.capture_image().map_err(|e| NodeError {
+    let rgba = monitor.capture_image().map_err(|e| NodeError {
         code: "SCREENSHOT_FAILED".into(),
         message: format!("capture failed: {e}"),
     })?;
 
-    let width = image.width();
-    let height = image.height();
+    let image = DynamicImage::ImageRgba8(rgba);
 
-    let mut png_bytes: Vec<u8> = Vec::new();
-    image
-        .write_to(
-            &mut std::io::Cursor::new(&mut png_bytes),
-            xcap::image::ImageFormat::Png,
+    // Downscale to cap — preserve aspect ratio.
+    let image = if image.width() > MAX_WIDTH || image.height() > MAX_HEIGHT {
+        image.resize(
+            MAX_WIDTH,
+            MAX_HEIGHT,
+            xcap::image::imageops::FilterType::Lanczos3,
+        )
+    } else {
+        image
+    };
+
+    // JPEG has no alpha; flatten to RGB first.
+    let rgb = image.to_rgb8();
+    let width = rgb.width();
+    let height = rgb.height();
+
+    let mut jpeg_bytes: Vec<u8> = Vec::new();
+    let encoder = JpegEncoder::new_with_quality(&mut jpeg_bytes, JPEG_QUALITY);
+    encoder
+        .write_image(
+            rgb.as_raw(),
+            width,
+            height,
+            xcap::image::ExtendedColorType::Rgb8,
         )
         .map_err(|e| NodeError {
             code: "SCREENSHOT_FAILED".into(),
-            message: format!("png encode failed: {e}"),
+            message: format!("jpeg encode failed: {e}"),
         })?;
 
-    let b64 = base64::engine::general_purpose::STANDARD.encode(&png_bytes);
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&jpeg_bytes);
 
     Ok(json!({
         "image": b64,
-        "mime_type": "image/png",
+        "mime_type": "image/jpeg",
         "encoding": "base64",
         "width": width,
         "height": height,
