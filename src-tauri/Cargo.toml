@@ -2,8 +2,8 @@
 name = "Yori-AI"
 version = "0.1.0"
 description = "A Launcher for personal AI with Yori AI"
-authors = ["lumina-ai-1104"]
-license = ""
+authors.workspace = true
+license.workspace = true
 repository = "https://github.com/waifu-lab/Yori-AI"
 edition = "2024"
 rust-version = "1.91.0"
@@ -12,57 +12,43 @@ rust-version = "1.91.0"
 tauri-build = { version = "2.5.3", features = [] }
 
 [dependencies]
-# tauri dependencies
-tauri = { version = "2.9.4", features = ["macos-private-api", "protocol-asset", "tray-icon"] }
+tauri = { version = "2.9.4", features = [
+    "macos-private-api",
+    "protocol-asset",
+    "tray-icon",
+] }
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 
-# serialization dependencies
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 percent-encoding = "2"
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
-toml = "0.9.8"
-bitflags = { version = "2.10.0", features = ["serde"] }
 
-# multithreading dependencies
 parking_lot = { version = "0.12.5", features = ["deadlock_detection"] }
-crossbeam-channel = "0.5.15"
 
-# logging dependencies
 log = "0.4.28"
-fern = { version = "0.7.1", features = ["colored"] }
-chrono = { version = "0.4.42", features = ["serde"] }
 
-# http file server dependencies
 actix-web = "4"
 
-# async runtime + websocket
 tokio = { version = "1", features = ["full"] }
 tokio-tungstenite = { version = "0.26", features = ["native-tls"] }
 futures-util = "0.3"
 
-# audio playback
 rodio = "0.20"
 base64 = "0.22"
 earshot = "1"
 cpal = "0.15"
 hound = "3"
 
-# http client (GitHub release download)
 reqwest = { version = "0.12", features = ["json", "stream"] }
 
-# utility dependencies
 anyhow = "1.0.100"
-thiserror = "2.0.17"
-
-notify = "8.2.0"
-strfmt = "0.2.5"
-
-
-# sandbox dependencies
-wit-bindgen = "0.48.1"
-wasmtime = "39.0.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_SystemInformation", "Win32_UI_Input_KeyboardAndMouse"] }
+windows = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_SystemInformation",
+    "Win32_UI_Input_KeyboardAndMouse",
+] }

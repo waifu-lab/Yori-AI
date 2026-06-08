@@ -1,3 +1,7 @@
 [workspace]
-members = ["src-tauri", "waifu-shared", "waifu-node", "live2d-wgpu-renderer"]
+members = ["src-tauri", "waifu-shared", "waifu-node"]
 resolver = "2"
+
+[workspace.package]
+authors = ["lumina-ai-1104", "phillychi3"]
+license = "MIT"
