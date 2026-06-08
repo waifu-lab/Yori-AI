@@ -107,12 +107,10 @@ fn capture(display_idx: i64) -> Result<Value, NodeError> {
     let b64 = base64::engine::general_purpose::STANDARD.encode(&jpeg_bytes);
 
     Ok(json!({
-        "image": b64,
-        "mime_type": "image/jpeg",
-        "encoding": "base64",
-        "width": width,
-        "height": height,
-        "display": display_idx
+        "__type": "image",
+        "bytes": b64,
+        "media_type": "image/jpeg",
+        "description": format!("截圖 {}x{}", width, height)
     }))
 }
 
