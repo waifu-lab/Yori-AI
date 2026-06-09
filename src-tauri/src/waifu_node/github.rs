@@ -2,7 +2,8 @@ use serde::Deserialize;
 use std::io::Write;
 use std::path::PathBuf;
 
-const GITHUB_API: &str = "https://api.github.com/repos/waifu-lab/Yori-AI/releases/latest";
+const GITHUB_RELEASES_API: &str =
+    "https://api.github.com/repos/waifu-lab/Yori-AI/releases?per_page=30";
 
 #[derive(Deserialize)]
 struct Release {
@@ -43,9 +44,22 @@ fn dest_path() -> anyhow::Result<PathBuf> {
     Ok(bin)
 }
 
-pub async fn latest_version() -> anyhow::Result<String> {
+async fn fetch_latest_release() -> anyhow::Result<Release> {
     let client = reqwest::Client::builder().user_agent("Yori-AI").build()?;
-    let release: Release = client.get(GITHUB_API).send().await?.json().await?;
+    let releases: Vec<Release> = client
+        .get(GITHUB_RELEASES_API)
+        .send()
+        .await?
+        .json()
+        .await?;
+    releases
+        .into_iter()
+        .find(|r| r.tag_name.starts_with("waifu-node-"))
+        .ok_or_else(|| anyhow::anyhow!("no waifu-node release found"))
+}
+
+pub async fn latest_version() -> anyhow::Result<String> {
+    let release = fetch_latest_release().await?;
     Ok(release.tag_name)
 }
 
@@ -56,8 +70,7 @@ where
     F: Fn(u64, u64) + Send + 'static,
 {
     let client = reqwest::Client::builder().user_agent("Yori-AI").build()?;
-
-    let release: Release = client.get(GITHUB_API).send().await?.json().await?;
+    let release = fetch_latest_release().await?;
     let target = asset_name();
 
     let asset = release
