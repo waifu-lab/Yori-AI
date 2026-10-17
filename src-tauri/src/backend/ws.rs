@@ -120,6 +120,9 @@ impl WsActor {
             ServerMsg::Error(e) => {
                 self.app.emit("backend-error", e).ok();
             }
+            ServerMsg::Stopped(s) => {
+                self.app.emit("chat-stopped", s).ok();
+            }
         }
     }
 }

@@ -255,13 +255,20 @@ pub async fn open_float_chat_window(app: AppHandle) -> Result<(), String> {
             win.set_focus().map_err(|e| e.to_string())
         }
         None => {
-            tauri::WebviewWindowBuilder::new(&app, "float-chat", WebviewUrl::App("float-chat".into()))
+            let win = tauri::WebviewWindowBuilder::new(&app, "float-chat", WebviewUrl::App("float-chat".into()))
                 .title("Yori AI")
                 .inner_size(380.0, 640.0)
                 .min_inner_size(320.0, 480.0)
                 .build()
-                .map(|_| ())
-                .map_err(|e| e.to_string())
+                .map_err(|e| e.to_string())?;
+            // The page can't reliably report its own close; tell the live2d window from here.
+            let handle = app.clone();
+            win.on_window_event(move |event| {
+                if matches!(event, tauri::WindowEvent::Destroyed) {
+                    handle.emit("float-chat-visible", false).ok();
+                }
+            });
+            Ok(())
         }
     }
 }

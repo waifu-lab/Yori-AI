@@ -1,6 +1,6 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { dropTail } from '$lib/backend/http';
-import { onChunk, onDone, onError, onEvent, onTranscript } from '$lib/backend/ws';
+import { onChunk, onDone, onError, onEvent, onStopped, onTranscript } from '$lib/backend/ws';
 import type { ChatEntry, MessageEntry, ToolEntry } from '$lib/backend/types';
 
 export type { ChatEntry, MessageEntry, ToolEntry };
@@ -8,10 +8,16 @@ export type { ChatEntry, MessageEntry, ToolEntry };
 class ChatStore {
 	messages = $state<MessageEntry[]>([]);
 
+	private inflight = $state<string[]>([]);
+
 	private unlisteners: UnlistenFn[] = [];
 
+	get busy() {
+		return this.inflight.length > 0;
+	}
+
 	async init() {
-		const [unTranscript, unChunk, unDone, unErr, unEvt] = await Promise.all([
+		const [unTranscript, unChunk, unDone, unErr, unEvt, unStopped] = await Promise.all([
 			onTranscript((msg) => {
 				this.addUserMessage(msg.request_id, msg.content);
 			}),
@@ -37,6 +43,11 @@ class ChatStore {
 					this.messages.push({ id: aid, role: 'assistant', content: msg.content, pending: false });
 				}
 				this.asstSegment.delete(msg.request_id);
+				this.inflight = this.inflight.filter((id) => id !== msg.request_id);
+			}),
+
+			onStopped((msg) => {
+				this.finishInterrupted(msg.request_id !== null);
 			}),
 
 			onError((msg) => {
@@ -58,17 +69,31 @@ class ChatStore {
 			})
 		]);
 
-		this.unlisteners = [unTranscript, unChunk, unDone, unErr, unEvt];
+		this.unlisteners = [unTranscript, unChunk, unDone, unErr, unEvt, unStopped];
 	}
 
 	destroy() {
 		for (const fn of this.unlisteners) fn();
 		this.unlisteners = [];
 		this.asstSegment.clear();
+		this.inflight = [];
 	}
 
 	addUserMessage(requestId: string, content: string, attachments?: ChatEntry['attachments']) {
 		this.messages.push({ id: requestId, role: 'user', content, pending: false, attachments });
+		if (!this.inflight.includes(requestId)) this.inflight = [...this.inflight, requestId];
+	}
+
+	private finishInterrupted(interrupted: boolean) {
+		this.messages = this.messages.map((m) => {
+			if (!m.pending) return m;
+			if (m.role === 'assistant' && interrupted) {
+				return { ...m, content: m.content ? `${m.content}\n\n〔已中斷〕` : '〔已中斷〕', pending: false };
+			}
+			return { ...m, pending: false };
+		});
+		this.asstSegment.clear();
+		this.inflight = [];
 	}
 
 	private asstSegment = new Map<string, number>();

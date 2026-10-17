@@ -17,6 +17,9 @@
 		multiple?: boolean;
 		onSend?: (value: string, files?: File[]) => void;
 		onModelChange?: (model: string) => void;
+
+		busy?: boolean;
+		onStop?: () => void;
 	}
 
 	let {
@@ -31,7 +34,9 @@
 		accept = '',
 		multiple = true,
 		onSend,
-		onModelChange
+		onModelChange,
+		busy = false,
+		onStop
 	}: Props = $props();
 
 	let textarea: HTMLTextAreaElement | undefined = $state();
@@ -124,6 +129,7 @@
 	}
 
 	const canSend = $derived((value.trim().length > 0 || files.length > 0) && !disabled);
+	const showStop = $derived(busy && !!onStop && !canSend);
 </script>
 
 <div class="w-full px-4 pb-4 {className}">
@@ -265,21 +271,35 @@
 				{/if}
 			</div>
 
-			<button
-				onclick={submit}
-				disabled={!canSend}
-				type="button"
-				class="duration-fast flex h-8 w-8 items-center justify-center rounded-md transition-all
+			{#if showStop}
+				<button
+					onclick={() => onStop?.()}
+					type="button"
+					class="duration-fast bg-primary shadow-mini flex h-8 w-8 items-center justify-center rounded-md text-white transition-all hover:brightness-110"
+					title="停止回覆"
+					aria-label="停止回覆"
+				>
+					<svg class="h-3.5 w-3.5" viewBox="0 0 14 14" fill="currentColor">
+						<rect x="2" y="2" width="10" height="10" rx="2" />
+					</svg>
+				</button>
+			{:else}
+				<button
+					onclick={submit}
+					disabled={!canSend}
+					type="button"
+					class="duration-fast flex h-8 w-8 items-center justify-center rounded-md transition-all
         {canSend
-					? 'bg-primary shadow-mini text-white hover:brightness-110'
-					: 'bg-elevated text-faint cursor-not-allowed'}"
-				title="送出 (Enter)"
-				aria-label="送出"
-			>
-				<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-					<path d="M8 12V4M4 8l4-4 4 4" stroke-linecap="round" stroke-linejoin="round" />
-				</svg>
-			</button>
+						? 'bg-primary shadow-mini text-white hover:brightness-110'
+						: 'bg-elevated text-faint cursor-not-allowed'}"
+					title="送出 (Enter)"
+					aria-label="送出"
+				>
+					<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+						<path d="M8 12V4M4 8l4-4 4 4" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+				</button>
+			{/if}
 		</div>
 	</div>
 </div>

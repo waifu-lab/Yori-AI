@@ -1,9 +1,18 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-	import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
+	import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event';
+	import { getCurrentWindow, PhysicalPosition, Window } from '@tauri-apps/api/window';
 	import { GalDialogue } from '@waifu/ui';
-	import { onEvent, sendLive2dSync, sendUserEvent } from '$lib/backend/ws';
+	import {
+		onChunk,
+		onDone,
+		onEvent,
+		onStopped,
+		onStopRequested,
+		sendLive2dSync,
+		sendStop,
+		sendUserEvent
+	} from '$lib/backend/ws';
 	import {
 		getCurrentModelUrl,
 		getLive2dTransform,
@@ -22,11 +31,33 @@
 		initApp,
 		loadModelFromUrl,
 		needsBackendLipsync,
+		onSpeakingChange,
 		playAudio,
 		queueExpression,
 		setFocus,
-		setModelTransform
+		setModelTransform,
+		stopSpeaking
 	} from '$lib/live2d/renderer';
+
+
+	const STOP_ACK_TIMEOUT_MS = 5000;
+	let speaking = $state(false);
+	let generating = $state(false);
+	let floatChatVisible = $state(false);
+
+	let stopping = false;
+	let stoppingTimer: ReturnType<typeof setTimeout> | null = null;
+	let unlistenStop: UnlistenFn[] = [];
+
+	function stopReply() {
+		sendStop().catch(console.warn);
+	}
+
+	function finishStopping() {
+		stopping = false;
+		if (stoppingTimer !== null) clearTimeout(stoppingTimer);
+		stoppingTimer = null;
+	}
 
 	const PET_WINDOW_MS = 1000;
 	const PET_MIN_REVERSALS = 5;
@@ -190,7 +221,43 @@
 			setFocus(event.payload.x, event.payload.y);
 		});
 
+		onSpeakingChange((value) => {
+			speaking = value;
+			emit('live2d-speaking', value).catch(() => {});
+		});
+
+		const floatChat = await Window.getByLabel('float-chat');
+		floatChatVisible = !!floatChat && (await floatChat.isVisible()) && !(await floatChat.isMinimized());
+
+		unlistenStop = await Promise.all([
+			listen<boolean>('float-chat-visible', (e) => {
+				floatChatVisible = e.payload;
+
+				if (e.payload) emit('live2d-speaking', speaking).catch(() => {});
+			}),
+			onChunk(() => {
+				generating = true;
+			}),
+			onDone(() => {
+				generating = false;
+			}),
+			onStopRequested(() => {
+				stopping = true;
+				generating = false;
+				stopSpeaking();
+				if (stoppingTimer !== null) clearTimeout(stoppingTimer);
+				stoppingTimer = setTimeout(finishStopping, STOP_ACK_TIMEOUT_MS);
+			}),
+			onStopped(() => {
+
+				stopSpeaking();
+				generating = false;
+				finishStopping();
+			})
+		]);
+
 		unlistenEvent = await onEvent((msg) => {
+			if (stopping && (msg.event === 'audio' || msg.event === 'lipsync' || msg.event === 'emotion')) return;
 			if (msg.event === 'emotion') {
 				queueExpression(msg.data.emotion);
 			} else if (msg.event === 'audio') {
@@ -240,6 +307,9 @@
 		unlistenEvent?.();
 		unlistenIdle?.();
 		unlistenTransform?.();
+		for (const fn of unlistenStop) fn();
+		finishStopping();
+		onSpeakingChange(null);
 		window.removeEventListener('mousemove', handlePetMove);
 		vadStore.stop();
 		destroyApp();
@@ -256,6 +326,11 @@
 	<button class="icon-btn drag-btn" title="拖動視窗" onmousedown={onDragMouseDown} style="margin-top: auto;">
 		<span class="icon-[material-symbols--drag-pan-rounded]"></span>
 	</button>
+	{#if (speaking || generating) && !floatChatVisible}
+		<button class="icon-btn stop-btn" title="停止回覆" onclick={stopReply}>
+			<span class="icon-[material-symbols--stop-rounded]"></span>
+		</button>
+	{/if}
 	<button class="icon-btn" title="開啟聊天" onclick={openChat}>
 		<span class="icon-[material-symbols--chat-outline-rounded]"></span>
 	</button>
@@ -339,6 +414,16 @@
 
 	.icon-btn.vad-active:hover {
 		background: rgba(239, 68, 68, 0.4);
+	}
+
+	.stop-btn {
+		background: rgba(239, 68, 68, 0.25);
+		color: rgb(239, 68, 68);
+	}
+
+	.stop-btn:hover {
+		background: rgba(239, 68, 68, 0.4);
+		color: #fff;
 	}
 
 	.close-btn:hover {

@@ -1,7 +1,21 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
-import type { Attachment, ChunkMessage, ConnectedMessage, DoneMessage, ErrorMessage, EventMessage, Live2dSyncAckMessage, TranscriptMessage } from './types';
+import type { Attachment, ChunkMessage, ConnectedMessage, DoneMessage, ErrorMessage, EventMessage, Live2dSyncAckMessage, StoppedMessage, TranscriptMessage } from './types';
+
+/** Interrupt the current reply (generation + TTS); every window gets `onStopRequested` immediately. */
+export function sendStop(): Promise<void> {
+	return invoke('backend_send_stop');
+}
+
+export function onStopRequested(cb: () => void): Promise<UnlistenFn> {
+	return listen('chat-stop-requested', () => cb());
+}
+
+/** Backend finished interrupting; nothing from the interrupted request arrives after this. */
+export function onStopped(cb: (msg: StoppedMessage) => void): Promise<UnlistenFn> {
+	return listen<StoppedMessage>('chat-stopped', (e) => cb(e.payload));
+}
 
 export function sendChat(content: string, live2d?: boolean, attachments?: Attachment[]): Promise<string> {
 	return invoke<string>('backend_send_chat', { content, live2d, attachments });

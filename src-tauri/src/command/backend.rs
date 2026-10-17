@@ -1,12 +1,12 @@
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_store::StoreExt;
 use uuid::Uuid;
 
 use crate::backend::{
     BackendWs,
     types::{
-        Attachment, ChatMsg, ClientMsg, Live2dSyncMsg, UserEventMsg, VoiceMsg, FEATURE_LIPSYNC,
-        FEATURE_LIVE2D,
+        Attachment, ChatMsg, ClientMsg, Live2dSyncMsg, StopMsg, UserEventMsg, VoiceMsg,
+        FEATURE_LIPSYNC, FEATURE_LIVE2D,
     },
 };
 
@@ -110,6 +110,18 @@ pub fn backend_send_user_event(
     ws: State<BackendWs>,
 ) -> Result<(), String> {
     ws.send(ClientMsg::UserEvent(UserEventMsg { name, data: data.unwrap_or(serde_json::json!({})) }))
+}
+
+/// Stop the current reply. Every window gets `chat-stop-requested` right away so
+/// audio is cut without waiting for the backend's `chat-stopped`.
+#[tauri::command]
+pub fn backend_send_stop(
+    app: AppHandle,
+    ws: State<BackendWs>,
+    state: State<AppState>,
+) -> Result<(), String> {
+    app.emit("chat-stop-requested", ()).ok();
+    ws.send(ClientMsg::Stop(StopMsg { conversation_id: state.get_conversation_id() }))
 }
 
 #[tauri::command]

@@ -1,15 +1,44 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { FloatingChatLayout, Chat } from '@waifu/ui';
 	import { chatStore } from '$lib/stores/chat.svelte';
-	import { sendChat } from '$lib/backend/ws';
+	import { sendChat, sendStop } from '$lib/backend/ws';
 	import { filesToAttachments } from '$lib/backend/attachments';
 
 	let inputValue = $state('');
 	let sending = $state(false);
 
-	onMount(() => chatStore.init());
-	onDestroy(() => chatStore.destroy());
+	let speaking = $state(false);
+	let unlistenSpeaking: UnlistenFn | null = null;
+
+
+	function reportVisible(visible: boolean) {
+		emit('float-chat-visible', visible).catch(() => {});
+	}
+
+	function onVisibilityChange() {
+		reportVisible(document.visibilityState === 'visible');
+	}
+
+	onMount(async () => {
+		await chatStore.init();
+		unlistenSpeaking = await listen<boolean>('live2d-speaking', (e) => {
+			speaking = e.payload;
+		});
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		onVisibilityChange();
+	});
+	onDestroy(() => {
+		chatStore.destroy();
+		unlistenSpeaking?.();
+		document.removeEventListener('visibilitychange', onVisibilityChange);
+		reportVisible(false);
+	});
+
+	function stopReply() {
+		sendStop().catch(console.warn);
+	}
 
 	async function handleSend(value: string, files?: File[]) {
 		if ((!value.trim() && !files?.length) || sending) return;
@@ -67,6 +96,13 @@
 	{/snippet}
 
 	{#snippet input()}
-		<Chat.SmartInput bind:value={inputValue} disabled={sending} placeholder="輸入訊息..." onSend={handleSend} />
+		<Chat.SmartInput
+			bind:value={inputValue}
+			disabled={sending}
+			placeholder="輸入訊息..."
+			onSend={handleSend}
+			busy={chatStore.busy || speaking}
+			onStop={stopReply}
+		/>
 	{/snippet}
 </FloatingChatLayout.Root>

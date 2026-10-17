@@ -264,22 +264,57 @@ export function attachLipsyncToLast(visemes: Viseme[]): void {
 	}
 }
 
+/** Bumped by `stopSpeaking` so callbacks of a cut-off clip can't advance the next one. */
+let playbackGen = 0;
+let speakingListener: ((speaking: boolean) => void) | null = null;
+
+function setAudioPlaying(playing: boolean): void {
+	if (audioPlaying === playing) return;
+	audioPlaying = playing;
+	speakingListener?.(playing);
+}
+
+/** Notified when TTS playback starts / ends (including via `stopSpeaking`). */
+export function onSpeakingChange(cb: ((speaking: boolean) => void) | null): void {
+	speakingListener = cb;
+}
+
+/** Cut the current clip and drop everything queued. */
+export function stopSpeaking(): void {
+	playbackGen++;
+	audioQueue.length = 0;
+	pendingExpression = null;
+	cancelLipsync();
+	stopAudio();
+	const model = currentModel as any;
+	model?.stopSpeaking?.();
+	// Manual lipsync leaves the mouth at the last viseme value; close it.
+	const lipSyncIds: string[] = model?.internalModel?.motionManager?.lipSyncIds ?? [];
+	try {
+		model?.internalModel?.coreModel?.setParameterValueById(lipSyncIds[0] ?? 'ParamMouthOpenY', 0);
+	} catch {
+		// Parameter not found — silently skip.
+	}
+	setAudioPlaying(false);
+}
+
 function playNextAudio(): void {
 	const entry = audioQueue.shift();
 	if (!entry) {
-		audioPlaying = false;
+		setAudioPlaying(false);
 		// An expression with no audio after it (e.g. TTS failed) still takes effect.
 		if (pendingExpression) setExpression(pendingExpression);
 		pendingExpression = null;
 		return;
 	}
-	audioPlaying = true;
+	setAudioPlaying(true);
 	const { dataUrl, durationMs, visemes, expression } = entry;
 	if (expression) setExpression(expression);
 
+	const gen = playbackGen;
 	let advanced = false;
 	function advance() {
-		if (advanced) return;
+		if (advanced || gen !== playbackGen) return;
 		advanced = true;
 		playNextAudio();
 	}

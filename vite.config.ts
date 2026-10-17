@@ -6,6 +6,9 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	server: {
 		port: 8080,
+		watch: {
+			ignored: ['**/target/**', '**/src-tauri/**']
+		},
 		fs: {
 			allow: ['..']
 		}

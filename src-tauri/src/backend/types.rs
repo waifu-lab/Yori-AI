@@ -8,6 +8,13 @@ pub enum ClientMsg {
     Live2dsync(Live2dSyncMsg),
     #[serde(rename = "event")]
     UserEvent(UserEventMsg),
+    Stop(StopMsg),
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct StopMsg {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conversation_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -71,6 +78,13 @@ pub enum ServerMsg {
     Done(DoneMsg),
     Event(EventMsg),
     Error(BackendError),
+    Stopped(StoppedMsg),
+}
+
+/// Reply to `stop`; everything the interrupted request sent arrives before this.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct StoppedMsg {
+    pub request_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
