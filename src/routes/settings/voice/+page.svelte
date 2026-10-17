@@ -3,8 +3,10 @@ import { Badge, Button, Field, Input, Select, Setting, Switch } from '@waifu/ui'
 import { onMount } from 'svelte'
 import {
 	configToVoice,
+	defaultDeepLConfig,
+	defaultGPTSoVITSTTSConfig,
+	defaultOpenAITTSConfig,
 	defaultSTTConfig,
-	defaultTTSConfig,
 	defaultVoiceConfig,
 	nullableString,
 	numberValue,
@@ -13,20 +15,32 @@ import {
 	withDefaults
 } from '$lib/backend/config'
 import { batchUpdateConfig, getAllConfig } from '$lib/backend/http'
-import type { STTConfig, TTSConfig, VoiceConfig } from '$lib/backend/types'
+import type {
+	DeepLConfig,
+	GPTSoVITSTTSConfig,
+	OpenAITTSConfig,
+	STTConfig,
+	TTSBackend,
+	TTSConfig,
+	VoiceConfig
+} from '$lib/backend/types'
 import { listInputDevices, vadGetDevice, vadSetDevice } from '$lib/commands'
 import { vadStore } from '$lib/stores/vad.svelte'
 
 type STTForm = Omit<STTConfig, 'language'> & { language: string }
-type TTSForm = TTSConfig
 
 let devices = $state<string[]>([])
 let selectedDevice = $state<string>('')
 
 let sttEnabled = $state(false)
 let ttsEnabled = $state(false)
+let translationEnabled = $state(false)
 let stt = $state<STTForm>(sttToForm(defaultSTTConfig))
-let tts = $state<TTSForm>({ ...defaultTTSConfig })
+// 各 backend 各自保留表單內容，切換 backend 時不會遺失
+let ttsBackend = $state<TTSBackend>('openai')
+let openaiTts = $state<OpenAITTSConfig>({ ...defaultOpenAITTSConfig })
+let gptsovitsTts = $state<GPTSoVITSTTSConfig>({ ...defaultGPTSoVITSTTSConfig })
+let translation = $state<DeepLConfig>({ ...defaultDeepLConfig })
 let lipsyncFps = $state(defaultVoiceConfig.lipsync_fps)
 let configLoading = $state(true)
 let configSaving = $state(false)
@@ -37,6 +51,18 @@ const deviceOptions = $derived([
 	{ value: '', label: '系統預設' },
 	...devices.map((d) => ({ value: d, label: d }))
 ])
+
+const ttsBackendOptions = [
+	{ value: 'openai', label: 'OpenAI compatible' },
+	{ value: 'gptsovits', label: 'GPT-SoVITS' }
+]
+
+const streamingModeOptions = [
+	{ value: '0', label: '停用' },
+	{ value: '1', label: '最佳品質' },
+	{ value: '2', label: '中等' },
+	{ value: '3', label: '最快' }
+]
 
 const ttsVoiceOptions = [
 	{ value: 'alloy', label: 'alloy' },
@@ -58,17 +84,26 @@ async function loadDevices() {
 	selectedDevice = current ?? ''
 }
 
+function applyVoice(voice: VoiceConfig) {
+	sttEnabled = !!voice.stt
+	ttsEnabled = !!voice.tts
+	translationEnabled = !!voice.translation
+	stt = sttToForm(voice.stt ?? defaultSTTConfig)
+	if (voice.tts?.backend === 'gptsovits') {
+		gptsovitsTts = withDefaults(defaultGPTSoVITSTTSConfig, voice.tts)
+	} else if (voice.tts) {
+		openaiTts = withDefaults(defaultOpenAITTSConfig, voice.tts)
+	}
+	ttsBackend = voice.tts?.backend ?? 'openai'
+	translation = withDefaults(defaultDeepLConfig, voice.translation)
+	lipsyncFps = voice.lipsync_fps
+}
+
 async function loadVoiceConfig() {
 	configLoading = true
 	configError = null
 	try {
-		const config = await getAllConfig()
-		const voice = configToVoice(config)
-		sttEnabled = !!voice.stt
-		ttsEnabled = !!voice.tts
-		stt = sttToForm(voice.stt ?? defaultSTTConfig)
-		tts = withDefaults(defaultTTSConfig, voice.tts)
-		lipsyncFps = voice.lipsync_fps
+		applyVoice(configToVoice(await getAllConfig()))
 	} catch (e) {
 		configError = String(e)
 	} finally {
@@ -113,11 +148,27 @@ function cleanStt(): STTConfig | null {
 	}
 }
 
-function cleanTts(): TTSConfig | null {
-	const apiKey = requiredString(tts.api_key)
-	const baseUrl = requiredString(tts.base_url)
-	const model = requiredString(tts.model)
-	const voice = requiredString(tts.voice)
+function cleanRetry(form: TTSConfig) {
+	const timeoutRetries = numberValue(form.timeout_retries, Number.NaN)
+	const retryBackoff = numberValue(form.retry_backoff_s, Number.NaN)
+	if (!Number.isInteger(timeoutRetries) || timeoutRetries < 0) {
+		configError = 'TTS 逾時重試次數必須是 0 以上的整數'
+		return null
+	}
+	if (!Number.isFinite(retryBackoff) || retryBackoff < 0) {
+		configError = 'TTS 重試間隔必須是 0 以上的數字'
+		return null
+	}
+	return { timeout_retries: timeoutRetries, retry_backoff_s: retryBackoff }
+}
+
+function cleanOpenAITts(): OpenAITTSConfig | null {
+	const apiKey = requiredString(openaiTts.api_key)
+	const baseUrl = requiredString(openaiTts.base_url)
+	const model = requiredString(openaiTts.model)
+	const voice = requiredString(openaiTts.voice)
+	const responseFormat = requiredString(openaiTts.response_format)
+	const speed = numberValue(openaiTts.speed, Number.NaN)
 
 	if (!apiKey) {
 		configError = '請輸入 TTS API key'
@@ -135,13 +186,74 @@ function cleanTts(): TTSConfig | null {
 		configError = '請輸入 TTS voice'
 		return null
 	}
+	if (!Number.isFinite(speed) || speed <= 0) {
+		configError = 'TTS speed 必須大於 0'
+		return null
+	}
+	const retry = cleanRetry(openaiTts)
+	if (!retry) return null
 
 	return {
+		backend: 'openai',
 		api_key: apiKey,
 		base_url: baseUrl,
 		model,
-		voice
+		voice,
+		response_format: responseFormat || defaultOpenAITTSConfig.response_format,
+		speed,
+		...retry
 	}
+}
+
+function cleanGPTSoVITSTts(): GPTSoVITSTTSConfig | null {
+	const form = gptsovitsTts
+	const baseUrl = requiredString(form.base_url)
+	if (!baseUrl) {
+		configError = '請輸入 GPT-SoVITS base URL'
+		return null
+	}
+	const numbers = {
+		batch_size: numberValue(form.batch_size, Number.NaN),
+		speed_factor: numberValue(form.speed_factor, Number.NaN),
+		streaming_mode: numberValue(form.streaming_mode, Number.NaN),
+		top_k: numberValue(form.top_k, Number.NaN),
+		top_p: numberValue(form.top_p, Number.NaN),
+		temperature: numberValue(form.temperature, Number.NaN),
+		timeout: numberValue(form.timeout, Number.NaN)
+	}
+	const invalid = Object.entries(numbers).find(([, v]) => !Number.isFinite(v))
+	if (invalid) {
+		configError = `GPT-SoVITS ${invalid[0]} 必須是數字`
+		return null
+	}
+	const retry = cleanRetry(form)
+	if (!retry) return null
+
+	return {
+		backend: 'gptsovits',
+		base_url: baseUrl,
+		ref_audio_path: requiredString(form.ref_audio_path),
+		prompt_text: form.prompt_text ?? '',
+		prompt_lang: requiredString(form.prompt_lang),
+		text_lang: requiredString(form.text_lang),
+		text_split_method: requiredString(form.text_split_method),
+		...numbers,
+		...retry
+	}
+}
+
+function cleanTranslation(): DeepLConfig | null {
+	const apiKey = requiredString(translation.api_key)
+	const targetLang = requiredString(translation.target_lang).toUpperCase()
+	if (!apiKey) {
+		configError = '請輸入 DeepL API key'
+		return null
+	}
+	if (!targetLang) {
+		configError = '請輸入翻譯目標語言'
+		return null
+	}
+	return { api_key: apiKey, target_lang: targetLang }
 }
 
 async function saveVoiceConfig() {
@@ -154,23 +266,24 @@ async function saveVoiceConfig() {
 	}
 	const cleanedStt = sttEnabled ? cleanStt() : null
 	if (sttEnabled && !cleanedStt) return
-	const cleanedTts = ttsEnabled ? cleanTts() : null
+	const cleanedTts = ttsEnabled
+		? ttsBackend === 'gptsovits'
+			? cleanGPTSoVITSTts()
+			: cleanOpenAITts()
+		: null
 	if (ttsEnabled && !cleanedTts) return
+	const cleanedTranslation = translationEnabled ? cleanTranslation() : null
+	if (translationEnabled && !cleanedTranslation) return
 
 	configSaving = true
 	try {
 		const payload: VoiceConfig = {
 			stt: cleanedStt,
 			tts: cleanedTts,
-			lipsync_fps: fps
+			lipsync_fps: fps,
+			translation: cleanedTranslation
 		}
-		const config = await batchUpdateConfig(voiceToConfig(payload))
-		const voice = configToVoice(config)
-		sttEnabled = !!voice.stt
-		ttsEnabled = !!voice.tts
-		stt = sttToForm(voice.stt ?? defaultSTTConfig)
-		tts = withDefaults(defaultTTSConfig, voice.tts)
-		lipsyncFps = voice.lipsync_fps
+		applyVoice(configToVoice(await batchUpdateConfig(voiceToConfig(payload))))
 		configSaved = true
 	} catch (e) {
 		configError = String(e)
@@ -254,23 +367,116 @@ onMount(async () => {
 	<Setting.Card
 		title="TTS 語音合成"
 		icon="icon-[material-symbols--volume-up-outline-rounded]"
-		description="OpenAI TTS compatible 語音合成設定"
+		description="OpenAI TTS compatible 或本機 GPT-SoVITS 語音合成設定"
 	>
 		<div class="flex flex-col gap-3">
 			<Switch id="tts-toggle" label="啟用 TTS" bind:checked={ttsEnabled} disabled={configLoading} />
 			{#if !configLoading && ttsEnabled}
+				<Field label="Backend" required>
+					<Select
+						options={ttsBackendOptions}
+						bind:value={ttsBackend}
+						onValueChange={(value) => (ttsBackend = value as TTSBackend)}
+					/>
+				</Field>
+				{#if ttsBackend === 'openai'}
+					<div class="grid gap-3 md:grid-cols-2">
+						<Field label="API Key" required>
+							<Input type="password" bind:value={openaiTts.api_key} />
+						</Field>
+						<Field label="Base URL" required>
+							<Input bind:value={openaiTts.base_url} />
+						</Field>
+						<Field label="Model" required>
+							<Input bind:value={openaiTts.model} />
+						</Field>
+						<Field label="Voice" required>
+							<Select options={ttsVoiceOptions} bind:value={openaiTts.voice} />
+						</Field>
+						<Field label="Response Format">
+							<Input bind:value={openaiTts.response_format} placeholder="mp3" />
+						</Field>
+						<Field label="Speed" required>
+							<Input type="number" step="0.1" min="0.25" bind:value={openaiTts.speed} />
+						</Field>
+						<Field label="逾時重試次數">
+							<Input type="number" min="0" bind:value={openaiTts.timeout_retries} />
+						</Field>
+						<Field label="重試間隔 (秒)">
+							<Input type="number" min="0" step="0.1" bind:value={openaiTts.retry_backoff_s} />
+						</Field>
+					</div>
+				{:else}
+					<div class="grid gap-3 md:grid-cols-2">
+						<Field label="Base URL" required>
+							<Input bind:value={gptsovitsTts.base_url} />
+						</Field>
+						<Field label="參考音訊路徑" hint="GPT-SoVITS 伺服器上的檔案路徑">
+							<Input bind:value={gptsovitsTts.ref_audio_path} />
+						</Field>
+						<Field label="參考音訊文字">
+							<Input bind:value={gptsovitsTts.prompt_text} />
+						</Field>
+						<Field label="參考音訊語言">
+							<Input bind:value={gptsovitsTts.prompt_lang} placeholder="zh" />
+						</Field>
+						<Field label="合成語言">
+							<Input bind:value={gptsovitsTts.text_lang} placeholder="zh" />
+						</Field>
+						<Field label="切句方式">
+							<Input bind:value={gptsovitsTts.text_split_method} placeholder="cut5" />
+						</Field>
+						<Field label="Streaming Mode">
+							<Select
+								options={streamingModeOptions}
+								value={String(gptsovitsTts.streaming_mode)}
+								onValueChange={(value) => (gptsovitsTts.streaming_mode = Number(value))}
+							/>
+						</Field>
+						<Field label="Speed Factor">
+							<Input type="number" step="0.1" bind:value={gptsovitsTts.speed_factor} />
+						</Field>
+						<Field label="Batch Size">
+							<Input type="number" min="1" bind:value={gptsovitsTts.batch_size} />
+						</Field>
+						<Field label="Top K">
+							<Input type="number" min="1" bind:value={gptsovitsTts.top_k} />
+						</Field>
+						<Field label="Top P">
+							<Input type="number" step="0.05" min="0" max="1" bind:value={gptsovitsTts.top_p} />
+						</Field>
+						<Field label="Temperature">
+							<Input type="number" step="0.1" bind:value={gptsovitsTts.temperature} />
+						</Field>
+						<Field label="逾時 (秒)">
+							<Input type="number" min="1" bind:value={gptsovitsTts.timeout} />
+						</Field>
+						<Field label="逾時重試次數">
+							<Input type="number" min="0" bind:value={gptsovitsTts.timeout_retries} />
+						</Field>
+						<Field label="重試間隔 (秒)">
+							<Input type="number" min="0" step="0.1" bind:value={gptsovitsTts.retry_backoff_s} />
+						</Field>
+					</div>
+				{/if}
+			{/if}
+		</div>
+	</Setting.Card>
+
+	<Setting.Card
+		title="翻譯"
+		icon="icon-[material-symbols--translate-rounded]"
+		description="設定後於 TTS 合成前以 DeepL 將回覆翻譯為目標語言"
+	>
+		<div class="flex flex-col gap-3">
+			<Switch id="translation-toggle" label="啟用 DeepL 翻譯" bind:checked={translationEnabled} disabled={configLoading} />
+			{#if !configLoading && translationEnabled}
 				<div class="grid gap-3 md:grid-cols-2">
 					<Field label="API Key" required>
-						<Input type="password" bind:value={tts.api_key} />
+						<Input type="password" bind:value={translation.api_key} />
 					</Field>
-					<Field label="Base URL" required>
-						<Input bind:value={tts.base_url} />
-					</Field>
-					<Field label="Model" required>
-						<Input bind:value={tts.model} />
-					</Field>
-					<Field label="Voice" required>
-						<Select options={ttsVoiceOptions} bind:value={tts.voice} />
+					<Field label="目標語言" hint="DeepL 語言代碼，例如 JA、EN-US" required>
+						<Input bind:value={translation.target_lang} placeholder="JA" />
 					</Field>
 				</div>
 			{/if}

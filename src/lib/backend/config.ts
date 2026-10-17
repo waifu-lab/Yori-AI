@@ -1,8 +1,14 @@
 import type {
+	ConfigUpdate,
 	ContextConfig,
+	DeepLConfig,
 	GatewayConfig,
+	GPTSoVITSTTSConfig,
+	HooksConfig,
+	OpenAITTSConfig,
 	ProviderConfig,
 	STTConfig,
+	TTSBackend,
 	TTSConfig,
 	VoiceConfig,
 	WaifuConfig,
@@ -17,12 +23,19 @@ export const defaultGatewayConfig: GatewayConfig = {
 }
 
 export const defaultContextConfig: ContextConfig = {
-	system_prompt_template: 'You are a helpful assistant.',
+	builtin_prompt: true,
+	system_prompt_template: '',
 	max_history_messages: 20,
 	history_strategy: 'sliding',
-	soul_content: null,
 	context_token_budget: null,
 	compact_threshold: 0.85
+}
+
+export const defaultHooksConfig: HooksConfig = {
+	emotion: true,
+	tts: true,
+	logging: true,
+	rate_limit_rpm: null
 }
 
 export const defaultProviderConfig: ProviderConfig = {
@@ -31,8 +44,7 @@ export const defaultProviderConfig: ProviderConfig = {
 	base_url: null,
 	model: '',
 	temperature: 0.7,
-	max_tokens: null,
-	stream: true
+	max_tokens: null
 }
 
 export const defaultSTTConfig: STTConfig = {
@@ -43,17 +55,52 @@ export const defaultSTTConfig: STTConfig = {
 	temperature: 0.0
 }
 
-export const defaultTTSConfig: TTSConfig = {
+export const defaultOpenAITTSConfig: OpenAITTSConfig = {
+	backend: 'openai',
 	api_key: '',
 	base_url: 'https://api.openai.com/v1/audio/speech',
 	model: 'tts-1',
-	voice: 'nova'
+	voice: 'nova',
+	response_format: 'mp3',
+	speed: 1.0,
+	timeout_retries: 1,
+	retry_backoff_s: 0.1
+}
+
+export const defaultGPTSoVITSTTSConfig: GPTSoVITSTTSConfig = {
+	backend: 'gptsovits',
+	base_url: 'http://127.0.0.1:9880',
+	ref_audio_path: '',
+	prompt_text: '',
+	prompt_lang: 'zh',
+	text_lang: 'zh',
+	text_split_method: 'cut5',
+	batch_size: 1,
+	speed_factor: 1.0,
+	streaming_mode: 0,
+	top_k: 15,
+	top_p: 1.0,
+	temperature: 1.0,
+	timeout: 60.0,
+	timeout_retries: 1,
+	retry_backoff_s: 0.1
+}
+
+export const defaultTTSConfigs: Record<TTSBackend, TTSConfig> = {
+	openai: defaultOpenAITTSConfig,
+	gptsovits: defaultGPTSoVITSTTSConfig
+}
+
+export const defaultDeepLConfig: DeepLConfig = {
+	api_key: '',
+	target_lang: 'JA'
 }
 
 export const defaultVoiceConfig: VoiceConfig = {
 	stt: null,
 	tts: null,
-	lipsync_fps: 20
+	lipsync_fps: 20,
+	translation: null
 }
 
 export const defaultNodeConfig: WaifuNodeConfig = {
@@ -71,6 +118,21 @@ export function withDefaults<T extends object>(
 	return { ...defaults, ...(value ?? {}) }
 }
 
+/** 取出 flatten 後 `prefix.*` 的直接子欄位；沒有任何欄位時回傳 null */
+export function pickSection(
+	config: Partial<WaifuConfig>,
+	prefix: string
+): Record<string, unknown> | null {
+	const section: Record<string, unknown> = {}
+	const head = `${prefix}.`
+	for (const [key, value] of Object.entries(config)) {
+		if (!key.startsWith(head)) continue
+		const leaf = key.slice(head.length)
+		if (!leaf.includes('.')) section[leaf] = value
+	}
+	return Object.keys(section).length ? section : null
+}
+
 export function configToGateway(config: Partial<WaifuConfig>): GatewayConfig {
 	return withDefaults(defaultGatewayConfig, {
 		host: config['gateway.host'],
@@ -80,7 +142,7 @@ export function configToGateway(config: Partial<WaifuConfig>): GatewayConfig {
 	})
 }
 
-export function gatewayToConfig(gateway: GatewayConfig): Partial<WaifuConfig> {
+export function gatewayToConfig(gateway: GatewayConfig): ConfigUpdate {
 	return {
 		'gateway.host': gateway.host,
 		'gateway.port': gateway.port,
@@ -90,24 +152,36 @@ export function gatewayToConfig(gateway: GatewayConfig): Partial<WaifuConfig> {
 }
 
 export function configToContext(config: Partial<WaifuConfig>): ContextConfig {
-	return withDefaults(defaultContextConfig, {
-		system_prompt_template: config['context.system_prompt_template'],
-		max_history_messages: config['context.max_history_messages'],
-		history_strategy: config['context.history_strategy'],
-		soul_content: config['context.soul_content'],
-		context_token_budget: config['context.context_token_budget'],
-		compact_threshold: config['context.compact_threshold']
-	})
+	return withDefaults(
+		defaultContextConfig,
+		pickSection(config, 'context') as Partial<ContextConfig> | null
+	)
 }
 
-export function contextToConfig(context: ContextConfig): Partial<WaifuConfig> {
+export function contextToConfig(context: ContextConfig): ConfigUpdate {
 	return {
+		'context.builtin_prompt': context.builtin_prompt,
 		'context.system_prompt_template': context.system_prompt_template,
 		'context.max_history_messages': context.max_history_messages,
 		'context.history_strategy': context.history_strategy,
-		'context.soul_content': context.soul_content,
 		'context.context_token_budget': context.context_token_budget,
 		'context.compact_threshold': context.compact_threshold
+	}
+}
+
+export function configToHooks(config: Partial<WaifuConfig>): HooksConfig {
+	return withDefaults(
+		defaultHooksConfig,
+		pickSection(config, 'hooks') as Partial<HooksConfig> | null
+	)
+}
+
+export function hooksToConfig(hooks: HooksConfig): ConfigUpdate {
+	return {
+		'hooks.emotion': hooks.emotion,
+		'hooks.tts': hooks.tts,
+		'hooks.logging': hooks.logging,
+		'hooks.rate_limit_rpm': hooks.rate_limit_rpm
 	}
 }
 
@@ -115,89 +189,58 @@ export function configToProvider(
 	config: Partial<WaifuConfig>,
 	prefix: 'provider' | 'utility_provider'
 ): ProviderConfig {
-	return withDefaults(defaultProviderConfig, {
-		provider: config[`${prefix}.provider`] ?? undefined,
-		api_key: config[`${prefix}.api_key`] ?? undefined,
-		base_url: config[`${prefix}.base_url`],
-		model: config[`${prefix}.model`] ?? undefined,
-		temperature: config[`${prefix}.temperature`] ?? undefined,
-		max_tokens: config[`${prefix}.max_tokens`],
-		stream: prefix === 'provider' ? (config['provider.stream'] ?? undefined) : true
-	})
+	return withDefaults(
+		defaultProviderConfig,
+		pickSection(config, prefix) as Partial<ProviderConfig> | null
+	)
 }
 
-export function providerToConfig(
-	provider: ProviderConfig,
-	prefix: 'provider' | 'utility_provider'
-): Partial<WaifuConfig> {
+/** 主要 provider 逐欄寫入，model / temperature / max_tokens 可即時生效 */
+export function providerToConfig(provider: ProviderConfig): ConfigUpdate {
 	return {
-		[`${prefix}.provider`]: provider.provider,
-		[`${prefix}.api_key`]: provider.api_key,
-		[`${prefix}.base_url`]: provider.base_url,
-		[`${prefix}.model`]: provider.model,
-		[`${prefix}.temperature`]: provider.temperature,
-		[`${prefix}.max_tokens`]: provider.max_tokens,
-		...(prefix === 'provider' ? { 'provider.stream': provider.stream } : {})
-	} as Partial<WaifuConfig>
-}
-
-export function nullProviderConfig(
-	prefix: 'utility_provider'
-): Partial<WaifuConfig> {
-	return {
-		[`${prefix}.provider`]: null,
-		[`${prefix}.api_key`]: null,
-		[`${prefix}.base_url`]: null,
-		[`${prefix}.model`]: null,
-		[`${prefix}.temperature`]: null,
-		[`${prefix}.max_tokens`]: null
-	} as Partial<WaifuConfig>
-}
-
-export function configToVoice(config: Partial<WaifuConfig>): VoiceConfig {
-	const hasStt =
-		config['voice.stt.api_key'] != null ||
-		config['voice.stt.base_url'] != null ||
-		config['voice.stt.model'] != null
-	const hasTts =
-		config['voice.tts.api_key'] != null ||
-		config['voice.tts.base_url'] != null ||
-		config['voice.tts.model'] != null
-
-	return {
-		stt: hasStt
-			? withDefaults(defaultSTTConfig, {
-					api_key: config['voice.stt.api_key'] ?? undefined,
-					base_url: config['voice.stt.base_url'] ?? undefined,
-					model: config['voice.stt.model'] ?? undefined,
-					language: config['voice.stt.language'],
-					temperature: config['voice.stt.temperature'] ?? undefined
-				})
-			: null,
-		tts: hasTts
-			? withDefaults(defaultTTSConfig, {
-					api_key: config['voice.tts.api_key'] ?? undefined,
-					base_url: config['voice.tts.base_url'] ?? undefined,
-					model: config['voice.tts.model'] ?? undefined,
-					voice: config['voice.tts.voice'] ?? undefined
-				})
-			: null,
-		lipsync_fps: config['voice.lipsync_fps'] ?? defaultVoiceConfig.lipsync_fps
+		'provider.provider': provider.provider,
+		'provider.api_key': provider.api_key,
+		'provider.base_url': provider.base_url,
+		'provider.model': provider.model,
+		'provider.temperature': provider.temperature,
+		'provider.max_tokens': provider.max_tokens
 	}
 }
 
-export function voiceToConfig(voice: VoiceConfig): Partial<WaifuConfig> {
+/** 輔助 provider 以子樹整批寫入（逐欄寫入時中途狀態會驗證失敗），null 代表停用 */
+export function utilityProviderToConfig(
+	provider: ProviderConfig | null
+): ConfigUpdate {
+	return { utility_provider: provider }
+}
+
+export function configToVoice(config: Partial<WaifuConfig>): VoiceConfig {
+	const stt = pickSection(config, 'voice.stt')
+	const tts = pickSection(config, 'voice.tts')
+	const translation = pickSection(config, 'voice.translation')
+	const backend: TTSBackend = tts?.backend === 'gptsovits' ? 'gptsovits' : 'openai'
+
 	return {
-		'voice.stt.api_key': voice.stt?.api_key ?? null,
-		'voice.stt.base_url': voice.stt?.base_url ?? null,
-		'voice.stt.model': voice.stt?.model ?? null,
-		'voice.stt.language': voice.stt?.language ?? null,
-		'voice.stt.temperature': voice.stt?.temperature ?? null,
-		'voice.tts.api_key': voice.tts?.api_key ?? null,
-		'voice.tts.base_url': voice.tts?.base_url ?? null,
-		'voice.tts.model': voice.tts?.model ?? null,
-		'voice.tts.voice': voice.tts?.voice ?? null,
-		'voice.lipsync_fps': voice.lipsync_fps
+		stt: stt ? withDefaults(defaultSTTConfig, stt as Partial<STTConfig>) : null,
+		tts: tts
+			? ({ ...defaultTTSConfigs[backend], ...tts, backend } as TTSConfig)
+			: null,
+		lipsync_fps:
+			(config['voice.lipsync_fps'] as number | null | undefined) ??
+			defaultVoiceConfig.lipsync_fps,
+		translation: translation
+			? withDefaults(defaultDeepLConfig, translation as Partial<DeepLConfig>)
+			: null
+	}
+}
+
+/** stt / tts / translation 以子樹整批寫入，null 代表停用 */
+export function voiceToConfig(voice: VoiceConfig): ConfigUpdate {
+	return {
+		'voice.lipsync_fps': voice.lipsync_fps,
+		'voice.stt': voice.stt ?? null,
+		'voice.tts': voice.tts ?? null,
+		'voice.translation': voice.translation ?? null
 	}
 }
 
@@ -211,7 +254,7 @@ export function configToNode(config: Partial<WaifuConfig>): WaifuNodeConfig {
 	})
 }
 
-export function nodeToConfig(node: WaifuNodeConfig): Partial<WaifuConfig> {
+export function nodeToConfig(node: WaifuNodeConfig): ConfigUpdate {
 	return {
 		'node.enabled': node.enabled,
 		'node.path': node.path,

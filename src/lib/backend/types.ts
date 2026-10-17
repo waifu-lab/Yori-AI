@@ -8,12 +8,19 @@ export interface GatewayConfig {
 }
 
 export interface ContextConfig {
+	builtin_prompt: boolean
 	system_prompt_template: string
 	max_history_messages: number
 	history_strategy: HistoryStrategy
-	soul_content?: string | null
 	context_token_budget?: number | null
 	compact_threshold: number
+}
+
+export interface HooksConfig {
+	emotion: boolean
+	tts: boolean
+	logging: boolean
+	rate_limit_rpm?: number | null
 }
 
 export interface ProviderConfig {
@@ -23,7 +30,6 @@ export interface ProviderConfig {
 	model: string
 	temperature: number
 	max_tokens?: number | null
-	stream?: boolean
 }
 
 export interface STTConfig {
@@ -34,17 +40,52 @@ export interface STTConfig {
 	temperature: number
 }
 
-export interface TTSConfig {
+export type TTSBackend = 'openai' | 'gptsovits'
+
+interface TTSBackendConfig {
+	timeout_retries: number
+	retry_backoff_s: number
+}
+
+export interface OpenAITTSConfig extends TTSBackendConfig {
+	backend: 'openai'
 	api_key: string
 	base_url: string
 	model: string
 	voice: string
+	response_format: string
+	speed: number
+}
+
+export interface GPTSoVITSTTSConfig extends TTSBackendConfig {
+	backend: 'gptsovits'
+	base_url: string
+	ref_audio_path: string
+	prompt_text: string
+	prompt_lang: string
+	text_lang: string
+	text_split_method: string
+	batch_size: number
+	speed_factor: number
+	streaming_mode: number // 0=停用; 1=最佳品質; 2=中; 3=最快
+	top_k: number
+	top_p: number
+	temperature: number
+	timeout: number
+}
+
+export type TTSConfig = OpenAITTSConfig | GPTSoVITSTTSConfig
+
+export interface DeepLConfig {
+	api_key: string
+	target_lang: string
 }
 
 export interface VoiceConfig {
 	stt?: STTConfig | null
 	tts?: TTSConfig | null
 	lipsync_fps: number
+	translation?: DeepLConfig | null
 }
 
 export interface WaifuNodeConfig {
@@ -60,10 +101,10 @@ export interface WaifuConfig {
 	'gateway.port': number
 	'gateway.session_ttl': number
 	'gateway.lane_max_queue': number
+	'context.builtin_prompt'?: boolean
 	'context.system_prompt_template': string
 	'context.max_history_messages': number
 	'context.history_strategy': HistoryStrategy
-	'context.soul_content'?: string | null
 	'context.context_token_budget'?: number | null
 	'context.compact_threshold': number
 	'provider.provider': string
@@ -72,28 +113,37 @@ export interface WaifuConfig {
 	'provider.model': string
 	'provider.temperature': number
 	'provider.max_tokens'?: number | null
-	'provider.stream'?: boolean
 	'utility_provider.provider'?: string | null
 	'utility_provider.api_key'?: string | null
 	'utility_provider.base_url'?: string | null
 	'utility_provider.model'?: string | null
 	'utility_provider.temperature'?: number | null
 	'utility_provider.max_tokens'?: number | null
-	'voice.stt.api_key'?: string | null
-	'voice.stt.base_url'?: string | null
-	'voice.stt.model'?: string | null
-	'voice.stt.language'?: string | null
-	'voice.stt.temperature'?: number | null
-	'voice.tts.api_key'?: string | null
-	'voice.tts.base_url'?: string | null
-	'voice.tts.model'?: string | null
-	'voice.tts.voice'?: string | null
 	'voice.lipsync_fps'?: number | null
+	'hooks.emotion'?: boolean
+	'hooks.tts'?: boolean
+	'hooks.logging'?: boolean
+	'hooks.rate_limit_rpm'?: number | null
 	'node.enabled'?: boolean | null
 	'node.path'?: string | null
 	'node.token'?: string | null
 	'node.invoke_timeout_ms'?: number | null
 	'node.ping_interval_s'?: number | null
+	// 巢狀設定（voice.stt.* 等）以 flatten 後的 key 回傳
+	[key: string]: unknown
+}
+
+/**
+ * PUT /config 的寫入內容：key 可為葉節點或子樹（如 'voice.tts'），
+ * 子樹以物件整批取代、以 null 移除；後端每個 key 都會驗證整份設定
+ */
+export type ConfigUpdate = Record<string, unknown>
+
+export interface ConfigSetResult {
+	key: string
+	status: string
+	path?: string
+	note?: string
 }
 
 export interface ConnectedMessage {
@@ -110,14 +160,16 @@ export interface Attachment {
 	size_bytes?: number
 }
 
+/** IncomingRequest.features 的已知旗標 */
+export type Feature = 'live2d' | 'lipsync'
+
 export interface ChatMessage {
 	type: 'chat'
 	conversation_id?: string
 	request_id?: string
 	content: string
 	attachments?: Attachment[]
-	live2d?: boolean
-	need_lipsync?: boolean
+	features?: Feature[]
 }
 
 export interface VoiceMessage {
@@ -198,6 +250,19 @@ export interface ToolResultEventMessage {
 	data: { name?: string; id?: string; result?: unknown; error?: string }
 }
 
+export interface ToolErrorEventMessage {
+	type: 'event'
+	event: 'tool_error'
+	data: { name: string; error: string }
+}
+
+/** 串流中斷後重跑該輪：從目前輸出尾端丟棄 discard 個字元 */
+export interface StreamResetEventMessage {
+	type: 'event'
+	event: 'stream_reset'
+	data: { discard: number }
+}
+
 export interface DialogueEventMessage {
 	type: 'event'
 	event: 'dialogue'
@@ -216,6 +281,8 @@ export type EventMessage =
 	| LipsyncEventMessage
 	| ToolCallEventMessage
 	| ToolResultEventMessage
+	| ToolErrorEventMessage
+	| StreamResetEventMessage
 	| DialogueEventMessage
 	| TitleUpdateEventMessage
 

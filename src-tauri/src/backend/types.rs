@@ -39,15 +39,16 @@ pub struct ChatMsg {
     pub content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attachments: Option<Vec<Attachment>>,
-    /// Whether to trigger emotion / audio events on the backend.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub live2d: Option<bool>,
-    /// Whether the frontend needs the backend to compute and return lipsync viseme data.
-    /// Only relevant when `live2d = true` and TTS is enabled.
-    /// Set to `false` (or omit) when the Live2D model supports native LipSync via `speak()`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub need_lipsync: Option<bool>,
+    /// Frontend capability flags, see [`FEATURE_LIVE2D`] / [`FEATURE_LIPSYNC`].
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub features: Vec<&'static str>,
 }
+
+/// Frontend can show emotions / play audio: backend emits emotion / audio events.
+pub const FEATURE_LIVE2D: &str = "live2d";
+/// Backend should compute lipsync visemes (the model has no native LipSync).
+/// Only relevant together with `live2d` and TTS enabled.
+pub const FEATURE_LIPSYNC: &str = "lipsync";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct VoiceMsg {
@@ -56,8 +57,8 @@ pub struct VoiceMsg {
     pub request_id: String,
     pub audio: String,  // base64
     pub format: String, // e.g. "wav", "webm"
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub live2d: Option<bool>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub features: Vec<&'static str>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

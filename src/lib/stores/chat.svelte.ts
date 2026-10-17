@@ -1,4 +1,5 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
+import { dropTail } from '$lib/backend/http';
 import { onChunk, onDone, onError, onEvent, onTranscript } from '$lib/backend/ws';
 import type { ChatEntry, MessageEntry, ToolEntry } from '$lib/backend/types';
 
@@ -49,6 +50,10 @@ class ChatStore {
 				} else if (msg.event === 'tool_result') {
 					const data = msg.data as { name?: string; id?: string; result?: unknown; error?: string };
 					this.resolveToolResult(data);
+				} else if (msg.event === 'tool_error') {
+					this.markToolError(msg.data);
+				} else if (msg.event === 'stream_reset') {
+					this.dropStreamTail(msg.data.discard);
 				}
 			})
 		]);
@@ -76,6 +81,17 @@ class ChatStore {
 	private bumpAsstSegment(requestId: string) {
 		const seg = (this.asstSegment.get(requestId) ?? 0) + 1;
 		this.asstSegment.set(requestId, seg);
+	}
+
+	// stream_reset 不帶 request_id；lane 串行處理，故套用到最後一個仍在串流的回覆
+	private dropStreamTail(discard: number) {
+		for (let i = this.messages.length - 1; i >= 0; i--) {
+			const m = this.messages[i];
+			if (m.role === 'assistant' && m.pending) {
+				this.messages[i] = { ...m, content: dropTail(m.content, discard) };
+				return;
+			}
+		}
 	}
 
 	private upsertToolCall(data: { name: string; arguments: string; id?: string }) {
@@ -132,13 +148,25 @@ class ChatStore {
 			return;
 		}
 		const prev = this.messages[idx] as ToolEntry;
+		const error = data.error ?? prev.error;
 		this.messages[idx] = {
 			...prev,
-			status: data.error ? 'error' : 'success',
+			status: error ? 'error' : 'success',
 			result: data.result,
-			error: data.error,
+			error,
 			pending: false
 		};
+	}
+
+	// tool_error 先於 tool_result 送達；先記下錯誤，由 tool_result 結束該工具
+	private markToolError(data: { name: string; error: string }) {
+		for (let i = this.messages.length - 1; i >= 0; i--) {
+			const m = this.messages[i];
+			if (m.role === 'tool' && m.pending && m.name === data.name) {
+				this.messages[i] = { ...m, error: data.error };
+				return;
+			}
+		}
 	}
 }
 

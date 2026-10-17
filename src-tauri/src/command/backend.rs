@@ -4,7 +4,10 @@ use uuid::Uuid;
 
 use crate::backend::{
     BackendWs,
-    types::{Attachment, ChatMsg, ClientMsg, Live2dSyncMsg, UserEventMsg, VoiceMsg},
+    types::{
+        Attachment, ChatMsg, ClientMsg, Live2dSyncMsg, UserEventMsg, VoiceMsg, FEATURE_LIPSYNC,
+        FEATURE_LIVE2D,
+    },
 };
 
 use crate::core::state::{AppState, STORE_KEY_BACKEND_URL};
@@ -64,22 +67,27 @@ pub fn backend_send_chat(
 ) -> Result<String, String> {
     let request_id = Uuid::new_v4().to_string();
     let conversation_id = state.get_conversation_id();
-    // Only ask the backend to compute lipsync visemes when Live2D is active AND
-    // the loaded model has no native LipSync parameter group.
-    let need_lipsync = if live2d == Some(true) {
-        Some(state.get_need_backend_lipsync())
-    } else {
-        None
-    };
     ws.send(ClientMsg::Chat(ChatMsg {
         conversation_id,
         request_id: request_id.clone(),
         content,
         attachments,
-        live2d,
-        need_lipsync,
+        features: request_features(live2d == Some(true), &state),
     }))?;
     Ok(request_id)
+}
+
+fn request_features(live2d: bool, state: &AppState) -> Vec<&'static str> {
+    if !live2d {
+        return Vec::new();
+    }
+    // Only ask the backend to compute lipsync visemes when the loaded model
+    // has no native LipSync parameter group.
+    if state.get_need_backend_lipsync() {
+        vec![FEATURE_LIVE2D, FEATURE_LIPSYNC]
+    } else {
+        vec![FEATURE_LIVE2D]
+    }
 }
 
 #[tauri::command]
@@ -117,7 +125,9 @@ pub fn backend_send_voice(
         request_id: request_id.clone(),
         audio: audio_b64,
         format: "webm".to_string(),
-        live2d: Some(true),
+        // Voice replies rely on the model's native LipSync on purpose: the
+        // backend-computed visemes look worse than Live2D's own.
+        features: vec![FEATURE_LIVE2D],
     }))?;
     Ok(request_id)
 }

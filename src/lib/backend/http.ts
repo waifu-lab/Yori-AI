@@ -1,7 +1,13 @@
 import { invoke } from '@tauri-apps/api/core'
 import axios from 'axios'
 
-import type { Attachment, EventMessage, WaifuConfig } from './types'
+import type {
+	Attachment,
+	ConfigSetResult,
+	ConfigUpdate,
+	EventMessage,
+	WaifuConfig
+} from './types'
 
 export type { Attachment }
 
@@ -75,6 +81,13 @@ export async function getConversationMessages(
 	return res.json()
 }
 
+/** 以 code point 計算（對齊後端 Python 字串長度）丟棄尾端 n 個字元 */
+export function dropTail(text: string, n: number): string {
+	if (!n || n <= 0) return text
+	const chars = Array.from(text)
+	return chars.slice(0, Math.max(0, chars.length - n)).join('')
+}
+
 function parseSseLines(
 	text: string,
 	buf: { value: string },
@@ -116,10 +129,17 @@ function parseSseLines(
 			} else if (type === 'error') {
 				callbacks.onError(
 					(evt.code as string) ?? 'error',
-					(evt.message as string) ?? ''
+					(evt.message as string) ?? evtContent
 				)
 			} else if (type === 'event') {
-				callbacks.onEvent?.(evt as unknown as EventMessage)
+				const event = evt as unknown as EventMessage
+				if (event.event === 'stream_reset') {
+					accumulatedContent.value = dropTail(
+						accumulatedContent.value,
+						event.data.discard
+					)
+				}
+				callbacks.onEvent?.(event)
 			}
 		} catch {
 			// ignore malformed SSE lines
@@ -195,38 +215,42 @@ export async function getAllConfig(): Promise<WaifuConfig> {
 	return jsonOrThrow<WaifuConfig>(await fetch(`${base}/config/`))
 }
 
+/**
+ * 依序寫入每個 key（後端逐一驗證整份設定，失敗時回 400 且先前的 key 已寫入），
+ * 完成後重新取得整份設定
+ */
 export async function batchUpdateConfig(
-	updates: Partial<WaifuConfig>
+	updates: ConfigUpdate
 ): Promise<WaifuConfig> {
 	const base = await getHttpBase()
-	return jsonOrThrow<WaifuConfig>(
+	await jsonOrThrow<Record<string, ConfigSetResult>>(
 		await fetch(`${base}/config/`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(updates)
 		})
 	)
+	return getAllConfig()
 }
 
-export async function getConfig<K extends keyof WaifuConfig>(
-	key: K
-): Promise<WaifuConfig[K]> {
+export async function getConfig(key: string): Promise<unknown> {
 	const base = await getHttpBase()
-	return jsonOrThrow<WaifuConfig[K]>(
-		await fetch(`${base}/config/${encodeURIComponent(String(key))}`)
+	const res = await jsonOrThrow<{ key: string; value: unknown }>(
+		await fetch(`${base}/config/${encodeURIComponent(key)}`)
 	)
+	return res.value
 }
 
-export async function setConfig<K extends keyof WaifuConfig>(
-	key: K,
-	value: WaifuConfig[K]
-): Promise<WaifuConfig> {
+export async function setConfig(
+	key: string,
+	value: unknown
+): Promise<ConfigSetResult> {
 	const base = await getHttpBase()
-	return jsonOrThrow<WaifuConfig>(
-		await fetch(`${base}/config/${encodeURIComponent(String(key))}`, {
+	return jsonOrThrow<ConfigSetResult>(
+		await fetch(`${base}/config/${encodeURIComponent(key)}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(value)
+			body: JSON.stringify({ value })
 		})
 	)
 }

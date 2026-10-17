@@ -1,4 +1,4 @@
-import { getConversationMessages, listConversations, resolveAttachmentUrl, streamChat, type ConversationItem } from '$lib/backend/http';
+import { dropTail, getConversationMessages, listConversations, resolveAttachmentUrl, streamChat, type ConversationItem } from '$lib/backend/http';
 import type { Attachment, ChatEntry, MessageEntry, ToolEntry } from '$lib/backend/types';
 
 function normalizeAttachments(raw: unknown): Attachment[] | undefined {
@@ -109,13 +109,25 @@ class ChatHttpStore {
 			return;
 		}
 		const prev = this.messages[idx] as ToolEntry;
+		const error = data.error ?? prev.error;
 		this.messages[idx] = {
 			...prev,
-			status: data.error ? 'error' : 'success',
+			status: error ? 'error' : 'success',
 			result: data.result,
-			error: data.error,
+			error,
 			pending: false
 		};
+	}
+
+	// tool_error 先於 tool_result 送達；先記下錯誤，由 tool_result 結束該工具
+	private markToolError(data: { name: string; error: string }) {
+		for (let i = this.messages.length - 1; i >= 0; i--) {
+			const m = this.messages[i];
+			if (m.role === 'tool' && m.pending && m.name === data.name) {
+				this.messages[i] = { ...m, error: data.error };
+				return;
+			}
+		}
 	}
 
 	conversations = $state<ConversationItem[]>([]);
@@ -219,8 +231,9 @@ class ChatHttpStore {
 				if (currentAsstId) {
 					const idx = this.messages.findIndex((m) => m.id === currentAsstId);
 					if (idx !== -1) {
+						// full 為所有段落的累積文字；工具呼叫後已拆成多段，僅在本段無內容時採用
 						const entry = this.messages[idx] as ChatEntry;
-						this.messages[idx] = { ...entry, content: full || entry.content, pending: false };
+						this.messages[idx] = { ...entry, content: entry.content || full, pending: false };
 					}
 				} else if (full) {
 					this.messages.push({ id: crypto.randomUUID(), role: 'assistant', content: full, pending: false });
@@ -246,6 +259,14 @@ class ChatHttpStore {
 					this.upsertToolCall(evt.data);
 				} else if (evt.event === 'tool_result') {
 					this.resolveToolResult(evt.data);
+				} else if (evt.event === 'tool_error') {
+					this.markToolError(evt.data);
+				} else if (evt.event === 'stream_reset') {
+					const idx = currentAsstId ? this.messages.findIndex((m) => m.id === currentAsstId) : -1;
+					if (idx !== -1) {
+						const entry = this.messages[idx] as ChatEntry;
+						this.messages[idx] = { ...entry, content: dropTail(entry.content, evt.data.discard) };
+					}
 				} else if (evt.event === 'title_update') {
 					this.updateConversationTitle(evt.data.conversation_id, evt.data.title);
 				}

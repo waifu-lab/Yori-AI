@@ -13,7 +13,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use uuid::Uuid;
 
 use crate::backend::BackendWs;
-use crate::backend::types::{ClientMsg, VoiceMsg};
+use crate::backend::types::{ClientMsg, FEATURE_LIVE2D, VoiceMsg};
 use crate::core::state::AppState;
 
 /// earshot requires exactly 256 i16 samples at 16 KHz per predict call.
@@ -375,7 +375,8 @@ fn send_utterance(pcm: &[i16], sample_rate: u32, app: &AppHandle) {
         request_id: request_id.clone(),
         audio: audio_b64,
         format: "wav".to_string(),
-        live2d: Some(true),
+        // Native Live2D LipSync only; see backend_send_voice.
+        features: vec![FEATURE_LIVE2D],
     })) {
         log::warn!("VAD: send failed: {e}");
     } else {

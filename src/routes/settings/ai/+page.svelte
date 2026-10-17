@@ -6,22 +6,18 @@ import {
 	defaultProviderConfig,
 	nullableNumber,
 	nullableString,
-	nullProviderConfig,
 	numberValue,
 	providerToConfig,
 	requiredString,
+	utilityProviderToConfig,
 	withDefaults
 } from '$lib/backend/config'
 import { batchUpdateConfig, getAllConfig } from '$lib/backend/http'
 import type { ProviderConfig } from '$lib/backend/types'
 
-type ProviderForm = Omit<
-	ProviderConfig,
-	'base_url' | 'max_tokens' | 'stream'
-> & {
+type ProviderForm = Omit<ProviderConfig, 'base_url' | 'max_tokens'> & {
 	base_url: string
 	max_tokens: string | number
-	stream: boolean
 }
 
 let provider = $state<ProviderForm>(providerToForm(defaultProviderConfig))
@@ -44,8 +40,7 @@ function providerToForm(
 		base_url: merged.base_url ?? '',
 		model: merged.model,
 		temperature: merged.temperature,
-		max_tokens: merged.max_tokens ?? '',
-		stream: merged.stream ?? true
+		max_tokens: merged.max_tokens ?? ''
 	}
 }
 
@@ -86,8 +81,7 @@ function cleanProvider(
 		base_url: nullableString(form.base_url),
 		model,
 		temperature,
-		max_tokens: maxTokens,
-		stream: form.stream
+		max_tokens: maxTokens
 	}
 }
 
@@ -123,10 +117,8 @@ async function saveConfig() {
 	saving = true
 	try {
 		const config = await batchUpdateConfig({
-			...providerToConfig(cleanedProvider, 'provider'),
-			...(cleanedUtilityProvider
-				? providerToConfig(cleanedUtilityProvider, 'utility_provider')
-				: nullProviderConfig('utility_provider'))
+			...providerToConfig(cleanedProvider),
+			...utilityProviderToConfig(cleanedUtilityProvider)
 		})
 		provider = providerToForm(configToProvider(config, 'provider'))
 		utilityEnabled = !!config['utility_provider.provider']
@@ -180,7 +172,6 @@ onMount(loadConfig)
 						<Input type="number" min="1" bind:value={provider.max_tokens} />
 					</Field>
 				</div>
-				<Switch id="provider-stream" label="啟用串流回應" bind:checked={provider.stream} />
 			{/if}
 		</div>
 	</Setting.Card>
