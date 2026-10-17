@@ -30,9 +30,12 @@ interface AudioQueueEntry {
 	dataUrl: string;
 	durationMs?: number;
 	visemes?: Viseme[];
+	expression?: string;
 }
 const audioQueue: AudioQueueEntry[] = [];
 let audioPlaying = false;
+/** Expression received while audio is playing; applied when the next clip starts. */
+let pendingExpression: string | null = null;
 
 async function ensureLoaded() {
 	if (initialized) return;
@@ -227,8 +230,26 @@ export function setFocus(x: number, y: number): void {
  * Attach viseme data via `attachLipsyncToLast` before the entry starts playing.
  */
 export function playAudio(audioB64: string, format: string, durationMs?: number): void {
-	audioQueue.push({ dataUrl: `data:audio/${format};base64,${audioB64}`, durationMs });
+	audioQueue.push({
+		dataUrl: `data:audio/${format};base64,${audioB64}`,
+		durationMs,
+		expression: pendingExpression ?? undefined
+	});
+	pendingExpression = null;
 	if (!audioPlaying) playNextAudio();
+}
+
+/**
+ * Apply an expression in sync with TTS playback.
+ * The backend sends each sentence's emotion right before its audio, often while an earlier
+ * sentence is still playing; defer it to that sentence's clip instead of switching early.
+ */
+export function queueExpression(name: string): void {
+	if (audioPlaying) {
+		pendingExpression = name;
+	} else {
+		setExpression(name);
+	}
 }
 
 /**
@@ -247,10 +268,14 @@ function playNextAudio(): void {
 	const entry = audioQueue.shift();
 	if (!entry) {
 		audioPlaying = false;
+		// An expression with no audio after it (e.g. TTS failed) still takes effect.
+		if (pendingExpression) setExpression(pendingExpression);
+		pendingExpression = null;
 		return;
 	}
 	audioPlaying = true;
-	const { dataUrl, durationMs, visemes } = entry;
+	const { dataUrl, durationMs, visemes, expression } = entry;
+	if (expression) setExpression(expression);
 
 	let advanced = false;
 	function advance() {

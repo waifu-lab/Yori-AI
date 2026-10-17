@@ -23,7 +23,7 @@
 		loadModelFromUrl,
 		needsBackendLipsync,
 		playAudio,
-		setExpression,
+		queueExpression,
 		setFocus,
 		setModelTransform
 	} from '$lib/live2d/renderer';
@@ -192,7 +192,7 @@
 
 		unlistenEvent = await onEvent((msg) => {
 			if (msg.event === 'emotion') {
-				setExpression(msg.data.emotion);
+				queueExpression(msg.data.emotion);
 			} else if (msg.event === 'audio') {
 				playAudio(msg.data.audio, msg.data.format, msg.data.duration_ms);
 			} else if (msg.event === 'lipsync' && needsBackendLipsync()) {
